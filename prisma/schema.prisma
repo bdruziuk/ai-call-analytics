@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String         @id @default(cuid())
+  name          String?
+  email         String         @unique
+  password      String?
+  image         String?
+  googleId      String?        @unique
+  isTestAccount Boolean        @default(false)
+  calls         Call[]
+  salesProfiles SalesProfile[]
+  apiKeys       ApiKey[]
+  subscription  Subscription?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId               String   @default("free")    // free | starter | growth | pro
+  status               String   @default("active")  // active | cancelled | past_due | trialing
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  stripePriceId        String?
+  currentPeriodStart   DateTime @default(now())
+  currentPeriodEnd     DateTime @default(now())
+  minutesUsed          Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String    @default("Default")
+  keyHash    String    @unique
+  keyPrefix  String
+  lastUsedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model SalesProfile {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  photo       String?
+  calls       Call[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+model Call {
+  id              String        @id @default(cuid())
+  userId          String?
+  user            User?         @relation(fields: [userId], references: [id])
+  salesProfileId  String?
+  salesProfile    SalesProfile? @relation(fields: [salesProfileId], references: [id])
+
+  fileName        String
+  filePath        String
+
+  status          String   @default("uploaded")
+  reportType      String   @default("medium")
+  errorMessage    String?
+
+  durationSeconds Int?     // audio duration populated after transcription
+
+  language        String?
+
+  transcript      String?
+
+  summary         String?
+  product         String?
+  saleStatus      String?
+  customerIntent  String?
+  nextStep        String?
+  score           Int?
+
+  issues          Json?
+  positives       Json?
+  recommendations Json?
+
+  objections      Json?
+  managerMistakes Json?
+  detailedReport  Json?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}

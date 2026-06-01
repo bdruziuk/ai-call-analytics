@@ -10,6 +10,18 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* PANTONE 2905 PC (#8DC8E8) brand palette */
+  --color-brand-50:  #EDF7FD;
+  --color-brand-100: #D0EBF8;
+  --color-brand-200: #B3DCF2;
+  --color-brand-300: #8DC8E8;
+  --color-brand-400: #63AED9;
+  --color-brand-500: #3A93C8;
+  --color-brand-600: #1C78AE;
+  --color-brand-700: #15608D;
+  --color-brand-800: #104A6D;
+  --color-brand-900: #0B344E;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -39,3 +39,19 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# uploaded files
+/public/uploads/
+/uploads/
+
+# logs
+dev.log
+dev-server.log
+
+# test audio files
+*.mp3
+*.wav
+*.m4a
+
+# claude session data
+.claude/

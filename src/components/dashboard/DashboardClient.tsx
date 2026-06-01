@@ -1,0 +1,591 @@
+"use client";
+
+import Link from "next/link";
+import { Eye, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import type ukDict from "@/dictionaries/uk.json";
+
+type Dictionary = typeof ukDict;
+type ReportType = "high_level" | "medium" | "detailed";
+
+type CallItem = {
+  id: string;
+  fileName: string;
+  status: string;
+  reportType: string;
+  language: string | null;
+  product: string | null;
+  saleStatus: string | null;
+  score: number | null;
+  createdAt: string;
+  errorMessage: string | null;
+  salesProfileId: string | null;
+};
+
+type SalesProfile = {
+  id: string;
+  name: string;
+  description: string | null;
+  photo: string | null;
+};
+
+type Props = {
+  t: Dictionary;
+  lang: string;
+  profiles: SalesProfile[];
+  initialManagerFilter?: string;
+  planId: string;
+  isTestAccount?: boolean;
+};
+
+type SortKey = "createdAt" | "fileName" | "score" | "status" | "saleStatus" | "product";
+type SortDir = "asc" | "desc";
+
+/* ── Sort helpers ── */
+function sortIcon(active: boolean, dir: SortDir) {
+  return (
+    <span className={`ml-1 text-[10px] leading-none ${active ? "text-brand-500" : "text-slate-300"}`}>
+      {!active ? "⇅" : dir === "asc" ? "▲" : "▼"}
+    </span>
+  );
+}
+
+function SortableHeader({
+  col, label, sortKey, sortDir, onSort,
+}: {
+  col: SortKey; label: string; sortKey: SortKey; sortDir: SortDir; onSort: (k: SortKey) => void;
+}) {
+  const active = col === sortKey;
+  return (
+    <th className="px-4 py-3">
+      <button
+        onClick={() => onSort(col)}
+        className="flex items-center text-xs font-semibold uppercase tracking-wide text-brand-700 hover:text-brand-900 transition-colors"
+      >
+        {label}
+        {sortIcon(active, sortDir)}
+      </button>
+    </th>
+  );
+}
+
+function sortCalls(arr: CallItem[], key: SortKey, dir: SortDir): CallItem[] {
+  return [...arr].sort((a, b) => {
+    let av: string | number, bv: string | number;
+    switch (key) {
+      case "createdAt":  av = a.createdAt;                       bv = b.createdAt;                       break;
+      case "fileName":   av = a.fileName.toLowerCase();           bv = b.fileName.toLowerCase();           break;
+      case "score":      av = a.score ?? -1;                     bv = b.score ?? -1;                     break;
+      case "status":     av = a.status;                          bv = b.status;                          break;
+      case "saleStatus": av = a.saleStatus ?? "";                bv = b.saleStatus ?? "";                break;
+      case "product":    av = (a.product ?? "").toLowerCase();   bv = (b.product ?? "").toLowerCase();   break;
+      default: return 0;
+    }
+    return av < bv ? (dir === "asc" ? -1 : 1) : av > bv ? (dir === "asc" ? 1 : -1) : 0;
+  });
+}
+
+/* ── Badges ── */
+function StatusBadge({ status, label, error }: { status: string; label: string; error?: string | null }) {
+  const base = "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium";
+  const map: Record<string, string> = {
+    queued:      "bg-slate-100 text-slate-600",
+    transcribing:"bg-brand-100 text-brand-700",
+    analyzing:   "bg-brand-100 text-brand-700",
+    completed:   "bg-emerald-100 text-emerald-700",
+    failed:      "bg-red-100 text-red-700",
+  };
+  const cls = map[status] ?? "bg-slate-100 text-slate-600";
+  const pulse = (status === "transcribing" || status === "analyzing");
+
+  return (
+    <span>
+      <span className={`${base} ${cls}`}>
+        {pulse && <span className="h-1.5 w-1.5 rounded-full bg-brand-500 animate-pulse" />}
+        {label}
+      </span>
+      {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+    </span>
+  );
+}
+
+function SaleStatusBadge({ status, label }: { status: string | null; label: string }) {
+  if (!status) return <span className="text-slate-400">-</span>;
+  const base = "inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium";
+  const map: Record<string, string> = {
+    sold:           "bg-emerald-100 text-emerald-700",
+    not_sold:       "bg-red-100 text-red-700",
+    potential_sale: "bg-amber-100 text-amber-700",
+  };
+  return <span className={`${base} ${map[status] ?? "bg-slate-100 text-slate-600"}`}>{label}</span>;
+}
+
+/* ── Main component ── */
+export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", planId, isTestAccount = false }: Props) {
+  // Test accounts bypass all plan restrictions
+  const isFree    = !isTestAccount && planId === "free";
+  const isStarter = !isTestAccount && planId === "starter";
+
+  const [calls, setCalls]           = useState<CallItem[]>([]);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [files, setFiles]           = useState<File[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [reportType, setReportType] = useState<ReportType>(isFree ? "high_level" : "medium");
+  const [selectedProfileId, setSelectedProfileId] = useState<string>("");
+  const [filterProfileId, setFilterProfileId]     = useState<string>(initialManagerFilter);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("createdAt");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const fileInputRef  = useRef<HTMLInputElement>(null);
+  const sentinelRef   = useRef<HTMLDivElement>(null);
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
+  }
+
+  function getLanguageLabel(lang: string | null): string {
+    if (!lang) return "-";
+    switch (lang) {
+      case "uk": return t.callLanguage.uk;
+      case "ru": return t.callLanguage.ru;
+      case "en": return t.callLanguage.en;
+      case "uk_ru": return t.callLanguage.uk_ru;
+      default: return lang;
+    }
+  }
+
+  function formatError(msg: string | null): string | null {
+    if (!msg) return null;
+    if (msg.startsWith("LANG_UNSUPPORTED:")) {
+      const l = msg.slice("LANG_UNSUPPORTED:".length);
+      return t.errors.unsupportedLanguage.replace("{language}", l);
+    }
+    return msg;
+  }
+
+  function getSaleStatusLabel(status?: string | null) {
+    switch (status) {
+      case "sold":           return t.dashboard.saleStatus.sold;
+      case "not_sold":       return t.dashboard.saleStatus.not_sold;
+      case "potential_sale": return t.dashboard.saleStatus.potential_sale;
+      default: return "-";
+    }
+  }
+
+  function getReportTypeLabel(rt?: string | null) {
+    switch (rt) {
+      case "high_level": return t.dashboard.reportTypes.high_level;
+      case "medium":     return t.dashboard.reportTypes.medium;
+      case "detailed":   return t.dashboard.reportTypes.detailed;
+      default: return "-";
+    }
+  }
+
+  function getStatusLabel(status: string) {
+    switch (status) {
+      case "queued":      return t.dashboard.processingStatus.queued;
+      case "transcribing":return t.dashboard.processingStatus.transcribing;
+      case "analyzing":   return t.dashboard.processingStatus.analyzing;
+      case "completed":   return t.dashboard.processingStatus.completed;
+      case "failed":      return t.dashboard.processingStatus.failed;
+      default: return status;
+    }
+  }
+
+  // Loads the first page and merges into state (preserving older calls already scrolled in).
+  async function loadCalls() {
+    const res = await fetch("/api/calls?limit=30", { cache: "no-store" });
+    console.log("[poll] status", res.status, "ct", res.headers.get("content-type"));
+    if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
+    const { calls: fresh, nextCursor: nc }: { calls: CallItem[]; nextCursor: string | null } =
+      await res.json();
+    console.log("[poll] fresh", fresh.map(c => ({ id: c.id.slice(-6), status: c.status, score: c.score })));
+    setCalls((prev) => {
+      const freshIds = new Set(fresh.map((c) => c.id));
+      const extra = prev.filter((c) => !freshIds.has(c.id));
+      const next = [...fresh, ...extra];
+      console.log("[poll] setCalls prev", prev.map(c => c.status), "→ next", next.map(c => c.status));
+      return next;
+    });
+    setNextCursor(nc);
+  }
+
+  const loadMore = useCallback(async () => {
+    if (!nextCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/calls?cursor=${encodeURIComponent(nextCursor)}&limit=30`);
+      if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
+      const { calls: more, nextCursor: nc }: { calls: CallItem[]; nextCursor: string | null } =
+        await res.json();
+      setCalls((prev) => {
+        const ids = new Set(prev.map((c) => c.id));
+        return [...prev, ...more.filter((c) => !ids.has(c.id))];
+      });
+      setNextCursor(nc);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [nextCursor, loadingMore]);
+
+  // Wire up IntersectionObserver on the sentinel
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !nextCursor) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) loadMore(); },
+      { rootMargin: "200px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [nextCursor, loadMore]);
+
+  function startProcessing(callId: string) {
+    // Fire-and-forget — any HTTP error is intentionally swallowed here because:
+    // 1. processCall already marks the call 'failed' in the DB on error.
+    // 2. loadCalls() polls every 3 s and will reflect the updated status.
+    // Awaiting or propagating the error would cause spurious console noise.
+    fetch(`/api/calls/${callId}/process`, { method: "POST" }).catch(() => undefined);
+  }
+
+  function addFiles(incoming: FileList | null) {
+    if (!incoming) return;
+    const audio = Array.from(incoming).filter(
+      (f) => f.type.startsWith("audio/") || /\.(mp3|wav|m4a|ogg|flac|aac|wma)$/i.test(f.name),
+    );
+    setFiles((prev) => {
+      const names = new Set(prev.map((f) => f.name));
+      return [...prev, ...audio.filter((f) => !names.has(f.name))];
+    });
+  }
+
+  function removeFile(index: number) {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handleDragOver(e: React.DragEvent) { e.preventDefault(); setIsDragging(true); }
+  function handleDragLeave(e: React.DragEvent) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) setIsDragging(false);
+  }
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault(); setIsDragging(false); addFiles(e.dataTransfer.files);
+  }
+
+  async function handleUpload() {
+    if (files.length === 0) return;
+    setIsUploading(true);
+    setUploadError(null);
+    try {
+      for (const file of files) {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("reportType", reportType);
+        if (selectedProfileId) formData.append("salesProfileId", selectedProfileId);
+        const res = await fetch("/api/calls/upload", { method: "POST", body: formData });
+
+        // Guard against HTML error pages (Next.js 500, 413, auth redirects, etc.)
+        // that would make res.json() throw "Unexpected token '<'".
+        const isJson = (res.headers.get("content-type") ?? "").includes("application/json");
+        const data: { id?: string; error?: string; planId?: string } = isJson
+          ? await res.json()
+          : {};
+
+        if (!res.ok) {
+          const msg = data.error === "minute_limit_exceeded"
+            ? t.errors.minuteLimitExceeded
+            : data.error || t.dashboard.uploadSection.somethingWentWrong;
+          throw new Error(msg);
+        }
+        if (data.id) startProcessing(data.id);
+      }
+      setFiles([]);
+      await loadCalls();
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : t.dashboard.uploadSection.somethingWentWrong);
+    } finally {
+      setIsUploading(false);
+    }
+  }
+
+  useEffect(() => {
+    loadCalls();
+    const id = window.setInterval(loadCalls, 3000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const filteredCalls = filterProfileId
+    ? calls.filter((c) => c.salesProfileId === filterProfileId)
+    : calls;
+
+  const sortedCalls = sortCalls(filteredCalls, sortKey, sortDir);
+
+  const completedCalls = filteredCalls.filter((c) => c.status === "completed");
+  const averageScore = completedCalls.length > 0
+    ? Math.round(completedCalls.reduce((s, c) => s + (c.score ?? 0), 0) / completedCalls.length)
+    : 0;
+  const soldCalls = completedCalls.filter((c) => c.saleStatus === "sold").length;
+  const saleRate = completedCalls.length > 0 ? Math.round((soldCalls / completedCalls.length) * 100) : 0;
+  const failedCalls = filteredCalls.filter((c) => c.status === "failed").length;
+
+  return (
+    <main className="mx-auto max-w-6xl p-8">
+      {/* Page header */}
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-slate-900">{t.dashboard.title}</h1>
+        <p className="mt-1 text-sm text-slate-500">{t.dashboard.subtitle}</p>
+      </div>
+
+      {/* Upload section */}
+      <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-100 text-brand-600">
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            </svg>
+          </span>
+          {t.dashboard.uploadSection.title}
+        </h2>
+
+        {/* Drop zone */}
+        <div
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onClick={() => fileInputRef.current?.click()}
+          className={`mb-4 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
+            isDragging
+              ? "border-brand-400 bg-brand-50"
+              : "border-slate-200 hover:border-brand-300 hover:bg-brand-50/50"
+          }`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".mp3,.wav,.m4a,.ogg,.flac,.aac,.wma,audio/*"
+            className="hidden"
+            onChange={(e) => addFiles(e.target.files)}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-brand-100 text-brand-500">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+          </div>
+          <p className="text-sm text-slate-500">{t.dashboard.uploadSection.dropzoneHint}</p>
+        </div>
+
+        {/* File list */}
+        {files.length > 0 && (
+          <div className="mb-4">
+            <p className="mb-2 text-sm font-medium text-slate-600">
+              {t.dashboard.uploadSection.selectedFiles} ({files.length})
+            </p>
+            <ul className="space-y-2">
+              {files.map((f, i) => (
+                <li key={i} className="flex items-center justify-between rounded-lg border border-slate-100 bg-slate-50 px-4 py-2 text-sm">
+                  <span className="truncate pr-4 text-slate-700">{f.name}</span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-slate-400">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
+                    <button onClick={() => removeFile(i)} className="text-slate-400 hover:text-red-500 transition-colors">
+                      {t.dashboard.uploadSection.remove}
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Controls */}
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={reportType}
+            onChange={(e) => setReportType(e.target.value as ReportType)}
+            className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+          >
+            <option value="high_level">{t.dashboard.reportTypes.high_level}</option>
+            <option value="medium"   disabled={isFree}>{t.dashboard.reportTypes.medium}{isFree ? " 🔒" : ""}</option>
+            <option value="detailed" disabled={isFree || isStarter}>{t.dashboard.reportTypes.detailed}{(isFree || isStarter) ? " 🔒" : ""}</option>
+          </select>
+
+          {profiles.length > 0 && (
+            <select
+              value={selectedProfileId}
+              onChange={(e) => setSelectedProfileId(e.target.value)}
+              className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            >
+              <option value="">{t.profiles.noManager}</option>
+              {profiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}{p.description ? ` · ${p.description}` : ""}
+                </option>
+              ))}
+            </select>
+          )}
+
+          <button
+            onClick={handleUpload}
+            disabled={files.length === 0 || isUploading}
+            className="rounded-xl bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 transition-colors"
+          >
+            {isUploading ? t.dashboard.uploadSection.uploading : t.dashboard.uploadSection.uploadButton}
+          </button>
+        </div>
+
+        {uploadError && (
+          <div className="mt-4 rounded-lg border border-red-100 bg-red-50 p-3 text-sm text-red-700">
+            {uploadError}
+          </div>
+        )}
+      </section>
+
+      {/* Stats */}
+      <div className="mb-8 grid gap-4 md:grid-cols-4">
+        {[
+          { label: t.dashboard.stats.totalCalls, value: calls.length, unit: "" },
+          { label: t.dashboard.stats.averageScore, value: averageScore, unit: "/10" },
+          { label: t.dashboard.stats.conversionRate, value: saleRate, unit: "%" },
+          { label: t.dashboard.stats.errors, value: failedCalls, unit: "" },
+        ].map(({ label, value, unit }) => (
+          <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+            <p className="mt-2 text-3xl font-bold text-brand-600">
+              {value}
+              {unit && <span className="ml-0.5 text-base font-medium text-slate-400">{unit}</span>}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {/* Calls table */}
+      <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 px-6 py-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">{t.dashboard.table.title}</h2>
+            <p className="mt-0.5 text-xs text-slate-400">{t.dashboard.table.autoUpdate}</p>
+          </div>
+
+          {profiles.length > 0 && (
+            <select
+              value={filterProfileId}
+              onChange={(e) => setFilterProfileId(e.target.value)}
+              className="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            >
+              <option value="">{t.profiles.allManagers}</option>
+              {profiles.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-slate-100 bg-brand-50">
+                <SortableHeader col="createdAt"  label={t.dashboard.table.date}    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                <SortableHeader col="fileName"   label={t.dashboard.table.file}    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700">{t.dashboard.table.report}</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700">{t.profiles.manager}</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700">{t.callLanguage.label}</th>
+                <SortableHeader col="product"    label={t.dashboard.table.product} sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                <SortableHeader col="saleStatus" label={t.dashboard.table.sale}    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                <SortableHeader col="score"      label={t.dashboard.table.score}   sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                <SortableHeader col="status"     label={t.dashboard.table.status}  sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                <th className="px-4 py-3 w-10"></th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-slate-100">
+              {sortedCalls.map((call) => (
+                <tr key={call.id} className="hover:bg-slate-50 transition-colors align-middle">
+                  <td className="px-4 py-3 text-sm text-slate-600">
+                    {new Date(call.createdAt).toLocaleDateString(t.dateLocale)}
+                  </td>
+
+                  <td className="px-4 py-3 text-sm font-medium text-slate-800 max-w-[180px] truncate">
+                    {call.fileName}
+                  </td>
+
+                  <td className="px-4 py-3 text-sm text-slate-600">
+                    {getReportTypeLabel(call.reportType)}
+                  </td>
+
+                  <td className="px-4 py-3 text-sm">
+                    {(() => {
+                      const profile = profiles.find((p) => p.id === call.salesProfileId);
+                      if (!profile) return <span className="text-slate-400">-</span>;
+                      const isFiltered = filterProfileId === profile.id;
+                      return (
+                        <button
+                          onClick={() => setFilterProfileId(isFiltered ? "" : profile.id)}
+                          className="flex items-center gap-2 hover:opacity-70 transition-opacity"
+                          title={isFiltered ? t.profiles.allManagers : t.profiles.viewCalls}
+                        >
+                          {profile.photo ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={profile.photo} alt="" className="h-6 w-6 rounded-full object-cover shrink-0 border border-slate-200" />
+                          ) : (
+                            <div className="h-6 w-6 rounded-full bg-brand-100 flex items-center justify-center shrink-0 text-xs font-semibold text-brand-600">
+                              {profile.name.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span className={isFiltered ? "font-semibold text-brand-700 underline" : "text-slate-700"}>
+                            {profile.name}
+                          </span>
+                        </button>
+                      );
+                    })()}
+                  </td>
+
+                  <td className="px-4 py-3 text-sm text-slate-600">{getLanguageLabel(call.language)}</td>
+
+                  <td className="px-4 py-3 text-sm text-slate-600">{call.product || "-"}</td>
+
+                  <td className="px-4 py-3">
+                    <SaleStatusBadge status={call.saleStatus} label={getSaleStatusLabel(call.saleStatus)} />
+                  </td>
+
+                  <td className="px-4 py-3 text-sm font-semibold text-slate-800">
+                    {call.score ? <span className="text-brand-600">{call.score}<span className="font-normal text-slate-400 text-xs">/10</span></span> : <span className="text-slate-400">-</span>}
+                  </td>
+
+                  <td className="px-4 py-3">
+                    <StatusBadge status={call.status} label={getStatusLabel(call.status)} error={formatError(call.errorMessage)} />
+                  </td>
+
+                  <td className="px-4 py-3 w-10 text-center">
+                    <Link
+                      href={`/${lang}/calls/${call.id}`}
+                      title={t.dashboard.table.view}
+                      className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-brand-50 hover:text-brand-600 transition-colors"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+
+              {filteredCalls.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="px-4 py-12 text-center text-slate-400">
+                    {t.dashboard.table.noCallsYet}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+
+          {/* Infinite scroll sentinel */}
+          <div ref={sentinelRef} className="flex justify-center py-3">
+            {loadingMore && <Loader2 className="h-5 w-5 animate-spin text-brand-400" />}
+          </div>
+        </div>
+      </section>
+    </main>
+  );
+}
