@@ -230,7 +230,7 @@ export default async function CallDetailsPage({ params }: Props) {
           </h2>
           {issues.length > 0 ? (
             <ul className="space-y-2">
-              {issues.map((item, i) => (
+              {issues.map((item: unknown, i: number) => (
                 <li key={i} className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800 border border-red-100">
                   {String(item)}
                 </li>
@@ -248,7 +248,7 @@ export default async function CallDetailsPage({ params }: Props) {
           </h2>
           {positives.length > 0 ? (
             <ul className="space-y-2">
-              {positives.map((item, i) => (
+              {positives.map((item: unknown, i: number) => (
                 <li key={i} className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-800 border border-emerald-100">
                   {String(item)}
                 </li>
@@ -266,7 +266,7 @@ export default async function CallDetailsPage({ params }: Props) {
           </h2>
           {recommendations.length > 0 ? (
             <ul className="space-y-2">
-              {recommendations.map((item, i) => (
+              {recommendations.map((item: unknown, i: number) => (
                 <li key={i} className="rounded-xl bg-brand-50 px-4 py-3 text-sm text-brand-800 border border-brand-100">
                   {String(item)}
                 </li>
@@ -287,7 +287,7 @@ export default async function CallDetailsPage({ params }: Props) {
           </h2>
           {objections.length > 0 ? (
             <ul className="space-y-2">
-              {objections.map((item, i) => (
+              {objections.map((item: unknown, i: number) => (
                 <li key={i} className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900 border border-amber-100">
                   {String(item)}
                 </li>
@@ -305,7 +305,7 @@ export default async function CallDetailsPage({ params }: Props) {
           </h2>
           {managerMistakes.length > 0 ? (
             <ul className="space-y-2">
-              {managerMistakes.map((item, i) => (
+              {managerMistakes.map((item: unknown, i: number) => (
                 <li key={i} className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800 border border-red-100">
                   {String(item)}
                 </li>
