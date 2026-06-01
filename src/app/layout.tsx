@@ -15,6 +15,13 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AI Call Analytics",
   description: "AI-powered call analysis for e-commerce",
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico",  sizes: "any" },
+    ],
+    apple: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
