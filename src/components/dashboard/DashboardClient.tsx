@@ -329,15 +329,15 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
   const failedCalls = filteredCalls.filter((c) => c.status === "failed").length;
 
   return (
-    <main className="mx-auto max-w-6xl p-8">
+    <main className="mx-auto max-w-6xl p-4 md:p-8">
       {/* Page header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-900">{t.dashboard.title}</h1>
+      <div className="mb-6 md:mb-8">
+        <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">{t.dashboard.title}</h1>
         <p className="mt-1 text-sm text-slate-500">{t.dashboard.subtitle}</p>
       </div>
 
       {/* Upload section */}
-      <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:mb-8 md:p-6">
         <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900">
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-100 text-brand-600">
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -353,7 +353,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
           onDragLeave={handleDragLeave}
           onDrop={handleDrop}
           onClick={() => fileInputRef.current?.click()}
-          className={`mb-4 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
+          className={`mb-4 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition-colors md:p-10 ${
             isDragging
               ? "border-brand-400 bg-brand-50"
               : "border-slate-200 hover:border-brand-300 hover:bg-brand-50/50"
@@ -399,11 +399,11 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
         )}
 
         {/* Controls */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <select
             value={reportType}
             onChange={(e) => setReportType(e.target.value as ReportType)}
-            className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 sm:w-auto"
           >
             <option value="high_level">{t.dashboard.reportTypes.high_level}</option>
             <option value="medium"   disabled={isFree}>{t.dashboard.reportTypes.medium}{isFree ? " 🔒" : ""}</option>
@@ -414,7 +414,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
             <select
               value={selectedProfileId}
               onChange={(e) => setSelectedProfileId(e.target.value)}
-              className="rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200 sm:w-auto"
             >
               <option value="">{t.profiles.noManager}</option>
               {profiles.map((p) => (
@@ -428,7 +428,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
           <button
             onClick={handleUpload}
             disabled={files.length === 0 || isUploading}
-            className="rounded-xl bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 transition-colors"
+            className="w-full rounded-xl bg-brand-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50 transition-colors sm:w-auto"
           >
             {isUploading ? t.dashboard.uploadSection.uploading : t.dashboard.uploadSection.uploadButton}
           </button>
@@ -461,9 +461,9 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
 
       {/* Calls table */}
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 md:px-6 md:py-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">{t.dashboard.table.title}</h2>
+            <h2 className="text-base font-semibold text-slate-900 md:text-lg">{t.dashboard.table.title}</h2>
             <p className="mt-0.5 text-xs text-slate-400">{t.dashboard.table.autoUpdate}</p>
           </div>
 
@@ -487,9 +487,9 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
               <tr className="border-b border-slate-100 bg-brand-50">
                 <SortableHeader col="createdAt"  label={t.dashboard.table.date}    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                 <SortableHeader col="fileName"   label={t.dashboard.table.file}    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700">{t.dashboard.table.report}</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700">{t.profiles.manager}</th>
-                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700">{t.callLanguage.label}</th>
+                <th className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700 md:table-cell">{t.dashboard.table.report}</th>
+                <th className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700 lg:table-cell">{t.profiles.manager}</th>
+                <th className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700 lg:table-cell">{t.callLanguage.label}</th>
                 <SortableHeader col="product"    label={t.dashboard.table.product} sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                 <SortableHeader col="saleStatus" label={t.dashboard.table.sale}    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                 <SortableHeader col="score"      label={t.dashboard.table.score}   sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
@@ -501,19 +501,19 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
             <tbody className="divide-y divide-slate-100">
               {sortedCalls.map((call) => (
                 <tr key={call.id} className="hover:bg-slate-50 transition-colors align-middle">
-                  <td className="px-4 py-3 text-sm text-slate-600">
+                  <td className="px-3 py-3 text-xs text-slate-500 whitespace-nowrap md:px-4 md:text-sm md:text-slate-600">
                     {new Date(call.createdAt).toLocaleDateString(t.dateLocale)}
                   </td>
 
-                  <td className="px-4 py-3 text-sm font-medium text-slate-800 max-w-[180px] truncate">
+                  <td className="px-3 py-3 text-sm font-medium text-slate-800 max-w-[120px] truncate md:px-4 md:max-w-[180px]">
                     {call.fileName}
                   </td>
 
-                  <td className="px-4 py-3 text-sm text-slate-600">
+                  <td className="hidden px-4 py-3 text-sm text-slate-600 md:table-cell">
                     {getReportTypeLabel(call.reportType)}
                   </td>
 
-                  <td className="px-4 py-3 text-sm">
+                  <td className="hidden px-4 py-3 text-sm lg:table-cell">
                     {(() => {
                       const profile = profiles.find((p) => p.id === call.salesProfileId);
                       if (!profile) return <span className="text-slate-400">-</span>;
@@ -533,23 +533,23 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
                     })()}
                   </td>
 
-                  <td className="px-4 py-3 text-sm text-slate-600">{getLanguageLabel(call.language)}</td>
+                  <td className="hidden px-4 py-3 text-sm text-slate-600 lg:table-cell">{getLanguageLabel(call.language)}</td>
 
-                  <td className="px-4 py-3 text-sm text-slate-600">{call.product || "-"}</td>
+                  <td className="px-3 py-3 text-xs text-slate-600 max-w-[80px] truncate md:px-4 md:text-sm md:max-w-none">{call.product || "-"}</td>
 
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3 md:px-4">
                     <SaleStatusBadge status={call.saleStatus} label={getSaleStatusLabel(call.saleStatus)} />
                   </td>
 
-                  <td className="px-4 py-3 text-sm font-semibold text-slate-800">
+                  <td className="px-3 py-3 text-sm font-semibold text-slate-800 md:px-4">
                     {call.score ? <span className="text-brand-600">{call.score}<span className="font-normal text-slate-400 text-xs">/10</span></span> : <span className="text-slate-400">-</span>}
                   </td>
 
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-3 md:px-4">
                     <StatusBadge status={call.status} label={getStatusLabel(call.status)} error={formatError(call.errorMessage)} />
                   </td>
 
-                  <td className="px-4 py-3 w-10 text-center">
+                  <td className="px-2 py-3 w-9 text-center md:px-4 md:w-10">
                     <Link
                       href={`/${lang}/calls/${call.id}`}
                       title={t.dashboard.table.view}
