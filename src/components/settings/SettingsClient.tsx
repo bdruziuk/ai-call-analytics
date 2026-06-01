@@ -3,7 +3,8 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
+import { ProfileAvatar } from "@/components/ProfileAvatar";
 import type ukDict from "@/dictionaries/uk.json";
 import { ApiKeySection, type ApiKeyRecord } from "@/components/settings/ApiKeySection";
 import { PlanSection } from "@/components/settings/PlanSection";
@@ -39,6 +40,7 @@ const languages = [
 ];
 
 export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentStatus, isTestAccount = false }: Props) {
+  const { update: updateSession }   = useSession();
   const [name, setName]             = useState(user.name ?? "");
   const [image, setImage]           = useState(user.image ?? "");
   const [saveState, setSaveState]   = useState<"idle" | "saving" | "saved">("idle");
@@ -72,6 +74,7 @@ export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentSt
       });
 
       setImage(url);
+      await updateSession({ image: url }); // flush stale URL from JWT
     } finally {
       setUploadingPhoto(false);
       e.target.value = "";
@@ -87,6 +90,7 @@ export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentSt
         body: JSON.stringify({ image: null }),
       });
       setImage("");
+      await updateSession({ image: null }); // flush stale URL from JWT
     } finally {
       setUploadingPhoto(false);
     }
@@ -124,18 +128,12 @@ export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentSt
         <div className="mb-6 flex items-center gap-4">
           {/* Avatar with upload overlay */}
           <div className="relative shrink-0 group">
-            {image ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={image}
-                alt=""
-                className="h-16 w-16 rounded-full object-cover ring-2 ring-brand-300"
-              />
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-100 text-brand-600 text-2xl font-bold ring-2 ring-brand-200">
-                {initials}
-              </div>
-            )}
+            <ProfileAvatar
+              photo={image || null}
+              name={user.name || user.email || "?"}
+              className="h-16 w-16 ring-2 ring-brand-300"
+              textClassName="text-2xl font-bold"
+            />
 
             {/* Camera overlay — visible on hover or while uploading */}
             <button

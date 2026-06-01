@@ -37,7 +37,13 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
 
   callbacks: {
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger, session: updateData }) {
+      // Client called useSession().update({ ... }) — merge the new values into the token
+      if (trigger === "update" && updateData) {
+        if ("image" in updateData) token.picture = updateData.image ?? null;
+        if ("name"  in updateData) token.name    = updateData.name  ?? token.name;
+      }
+
       // Initial sign-in
       if (user && account) {
         if (account.provider === "google") {
