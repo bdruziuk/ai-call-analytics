@@ -189,19 +189,44 @@ export function ProfilesClient({ t, lang, initialProfiles, maxManagers }: Props)
     setError(null);
   }
 
+  function compressImage(file: File, maxPx = 512, quality = 0.8): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        const scale  = Math.min(1, maxPx / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width  = Math.round(img.width  * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d")!.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => blob ? resolve(blob) : reject(new Error("Compression failed")),
+          "image/jpeg", quality,
+        );
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("Image load failed")); };
+      img.src = url;
+    });
+  }
+
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingPhoto(true);
     setError(null);
-    const data = new FormData();
-    data.append("file", file);
-    const res = await fetch("/api/profiles/photo", { method: "POST", body: data });
-    setUploadingPhoto(false);
-    if (!res.ok) { setError(t.dashboard.uploadSection.somethingWentWrong); return; }
-    const { url } = await res.json();
-    setForm((f) => ({ ...f, photo: url }));
-    e.target.value = "";
+    try {
+      const compressed = await compressImage(file);
+      const data = new FormData();
+      data.append("file", compressed, "photo.jpg");
+      const res = await fetch("/api/profiles/photo", { method: "POST", body: data });
+      if (!res.ok) { setError(t.dashboard.uploadSection.somethingWentWrong); return; }
+      const { url } = await res.json();
+      setForm((f) => ({ ...f, photo: url }));
+      e.target.value = "";
+    } finally {
+      setUploadingPhoto(false);
+    }
   }
 
   async function handleSave() {
