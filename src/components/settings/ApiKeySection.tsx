@@ -72,7 +72,9 @@ export function ApiKeySection({ t, initialKeys, locked = false }: Props) {
 
   function formatDate(iso: string | null) {
     if (!iso) return ak.never;
-    return new Date(iso).toLocaleDateString();
+    // Use UTC date parts to avoid timezone-driven server/client mismatch (#418)
+    const d = new Date(iso);
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
   }
 
   if (locked) {

@@ -44,10 +44,9 @@ export function PlanSection({
   const plan    = PLANS[planId as PlanId] ?? PLANS.free;
   const pct     = minutesLimit > 0 ? Math.min(100, (minutesUsed / minutesLimit) * 100) : 0;
   const isNearLimit = pct >= 80;
-  const renewDate   = new Date(currentPeriodEnd).toLocaleDateString(
-    lang === "uk" ? "uk-UA" : lang === "ru" ? "ru-RU" : "en-GB",
-    { day: "numeric", month: "long", year: "numeric" },
-  );
+  // Build renewDate from UTC parts to avoid timezone-driven server/client mismatch (#418)
+  const _d          = new Date(currentPeriodEnd);
+  const renewDate   = `${_d.getUTCDate().toString().padStart(2,"0")}/${String(_d.getUTCMonth()+1).padStart(2,"0")}/${_d.getUTCFullYear()}`;
 
   async function handleUpgrade(targetPlanId: string) {
     setUpgradeLoading(targetPlanId);
