@@ -181,7 +181,61 @@ function CallsTable({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div>
+      {/* Mobile cards */}
+      <div className="md:hidden divide-y divide-slate-100">
+        {calls.map((c) => (
+          <Fragment key={c.id}>
+            <div className="px-4 py-3 hover:bg-slate-50 transition-colors">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-mono text-xs text-slate-700">{c.fileName}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <StatusBadge status={c.status} t={t} />
+                    <SaleBadge status={c.saleStatus} />
+                    {c.score !== null && (
+                      <span
+                        className="inline-flex h-5 w-7 items-center justify-center rounded text-white text-[10px] font-bold"
+                        style={{ background: c.score >= 8 ? "#16a34a" : c.score >= 5 ? "#1C78AE" : "#dc2626" }}
+                      >
+                        {c.score}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1 flex flex-wrap gap-x-2 text-[10px] text-slate-400">
+                    <span>{fmtDate(c.createdAt, locale)}</span>
+                    {c.durationSeconds ? <span>{fmtDuration(c.durationSeconds)}</span> : null}
+                    {c.language && <span className="uppercase">{c.language}</span>}
+                  </div>
+                  {expandedError === c.id && c.errorMessage && (
+                    <p className="mt-1 font-mono text-[10px] text-red-600 break-all">{c.errorMessage}</p>
+                  )}
+                </div>
+                <div className="flex shrink-0 items-center gap-1">
+                  {c.status === "failed" && c.errorMessage && (
+                    <button
+                      onClick={() => setExpandedError(expandedError === c.id ? null : c.id)}
+                      className="rounded p-1 text-[10px] text-red-400 underline"
+                    >
+                      {t.admin.errorDetail}
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleDeleteCall(c.id)}
+                    disabled={deletingCall === c.id}
+                    className="rounded p-1 text-slate-300 hover:text-red-500 disabled:opacity-40"
+                  >
+                    {deletingCall === c.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Fragment>
+        ))}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto">
       <table className="w-full min-w-[700px] text-xs">
         <thead>
           <tr className="border-b border-slate-100 bg-slate-50/60">
@@ -270,6 +324,7 @@ function CallsTable({
           ))}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -376,14 +431,14 @@ function UserRow({
   return (
     <div className={`overflow-hidden rounded-xl border shadow-sm transition-colors ${rowBg} ${borderColor}`}>
       {/* ── Header row — use div so we can nest real interactive controls ── */}
-      <div className="flex w-full items-center gap-4 px-5 py-4">
+      <div className="flex w-full flex-wrap items-center gap-3 px-4 py-3 md:px-5 md:py-4">
         {/* Expand zone (clickable area) */}
         <div
           role="button"
           tabIndex={0}
           onClick={() => setOpen((p) => !p)}
           onKeyDown={(e) => e.key === "Enter" && setOpen((p) => !p)}
-          className="flex flex-1 cursor-pointer items-center gap-4 min-w-0"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3"
         >
           {/* Avatar */}
           {user.image ? (
@@ -429,7 +484,7 @@ function UserRow({
           </div>
 
           {/* Counts */}
-          <div className="flex items-center gap-2 pl-2">
+          <div className="flex flex-wrap items-center gap-1.5 pl-1">
             <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
               <Users size={11} />
               {profiles.length}
@@ -458,6 +513,8 @@ function UserRow({
           </span>
         </div>
 
+        {/* ── Controls: plan / delete / test ── */}
+        <div className="flex w-full flex-wrap items-center gap-2 md:w-auto md:contents">
         {/* ── Plan selector ── */}
         <div className="relative flex-shrink-0">
           <select
@@ -509,6 +566,7 @@ function UserRow({
           />
           {saving ? <Loader2 size={11} className="animate-spin" /> : t.admin.testAccount}
         </label>
+        </div>{/* end controls wrapper */}
       </div>
 
       {/* ── Expanded content ── */}
@@ -614,29 +672,45 @@ function ProcessingQueue({ users, t, locale }: { users: UserRecord[]; t: Diction
       {queue.length === 0 ? (
         <p className="px-5 py-4 text-xs text-amber-600">{t.admin.processingQueueEmpty}</p>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-xs">
-            <thead>
-              <tr className="border-b border-amber-200">
-                {["Account", t.admin.callFile, t.admin.callStatus, t.admin.callDate].map((h) => (
-                  <th key={h} className="px-4 py-2 text-left font-medium text-amber-700 first:pl-5">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {queue.map((c) => (
-                <tr key={c.id} className="border-b border-amber-100 last:border-0">
-                  <td className="py-2 pl-5 pr-4 text-amber-800">{c.userEmail}</td>
-                  <td className="px-4 py-2 font-mono text-amber-700 max-w-[160px] truncate">{c.fileName}</td>
-                  <td className="px-4 py-2"><StatusBadge status={c.status} t={t} /></td>
-                  <td className="px-4 py-2 text-amber-600 whitespace-nowrap">{fmt(c.createdAt, locale)}</td>
+        <>
+          {/* Mobile cards */}
+          <div className="md:hidden divide-y divide-amber-100">
+            {queue.map((c) => (
+              <div key={c.id} className="px-4 py-3">
+                <div className="flex items-center justify-between gap-2">
+                  <StatusBadge status={c.status} t={t} />
+                  <span className="text-[10px] text-amber-600">{fmt(c.createdAt, locale)}</span>
+                </div>
+                <p className="mt-1 truncate font-mono text-xs text-amber-700">{c.fileName}</p>
+                <p className="mt-0.5 text-[10px] text-amber-500">{c.userEmail}</p>
+              </div>
+            ))}
+          </div>
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full min-w-[560px] text-xs">
+              <thead>
+                <tr className="border-b border-amber-200">
+                  {["Account", t.admin.callFile, t.admin.callStatus, t.admin.callDate].map((h) => (
+                    <th key={h} className="px-4 py-2 text-left font-medium text-amber-700 first:pl-5">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {queue.map((c) => (
+                  <tr key={c.id} className="border-b border-amber-100 last:border-0">
+                    <td className="py-2 pl-5 pr-4 text-amber-800">{c.userEmail}</td>
+                    <td className="px-4 py-2 font-mono text-amber-700 max-w-[160px] truncate">{c.fileName}</td>
+                    <td className="px-4 py-2"><StatusBadge status={c.status} t={t} /></td>
+                    <td className="px-4 py-2 text-amber-600 whitespace-nowrap">{fmt(c.createdAt, locale)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </div>
   );
@@ -864,9 +938,9 @@ export function AdminPanel({ t, initialUsers }: Props) {
   }, [hasInProgress, doRefresh]);
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-8 space-y-6">
+    <div className="mx-auto max-w-7xl px-4 py-6 space-y-4 md:px-6 md:py-8 md:space-y-6">
       {/* ── Header ── */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: "#1C78AE" }}>
           <Shield size={20} className="text-white" />
         </div>
@@ -875,7 +949,7 @@ export function AdminPanel({ t, initialUsers }: Props) {
           <p className="text-xs text-slate-400">{t.admin.subtitle}</p>
         </div>
 
-        <div className="ml-auto flex items-center gap-3">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           {/* Auto-refresh indicator */}
           {hasInProgress && (
             <span className="hidden items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 border border-amber-200 sm:inline-flex">
@@ -893,20 +967,20 @@ export function AdminPanel({ t, initialUsers }: Props) {
           {/* Create account */}
           <button
             onClick={() => setShowCreate(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-brand-700 md:px-4"
           >
             <UserPlus size={14} />
-            {t.admin.createAccount}
+            <span className="hidden sm:inline">{t.admin.createAccount}</span>
           </button>
 
           {/* Manual refresh */}
           <button
             onClick={doRefresh}
             disabled={refreshing}
-            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50"
+            className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:opacity-50 md:px-4"
           >
             <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-            {t.admin.refresh}
+            <span className="hidden sm:inline">{t.admin.refresh}</span>
           </button>
         </div>
       </div>
