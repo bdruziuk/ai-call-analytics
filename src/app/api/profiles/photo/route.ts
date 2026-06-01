@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
-import { randomUUID } from "crypto";
+
+const MAX_BYTES = 2 * 1024 * 1024; // 2 MB
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -16,14 +15,12 @@ export async function POST(request: Request) {
   if (!file || !file.type.startsWith("image/"))
     return NextResponse.json({ error: "Invalid file" }, { status: 400 });
 
-  const ext = (file.name.split(".").pop() ?? "jpg").toLowerCase();
-  const filename = `${randomUUID()}.${ext}`;
-  const dir = join(process.cwd(), "public", "uploads", "profiles");
+  if (file.size > MAX_BYTES)
+    return NextResponse.json({ error: "File too large (max 2 MB)" }, { status: 413 });
 
-  await mkdir(dir, { recursive: true });
+  const bytes  = await file.arrayBuffer();
+  const base64 = Buffer.from(bytes).toString("base64");
+  const url    = `data:${file.type};base64,${base64}`;
 
-  const bytes = await file.arrayBuffer();
-  await writeFile(join(dir, filename), Buffer.from(bytes));
-
-  return NextResponse.json({ url: `/uploads/profiles/${filename}` });
+  return NextResponse.json({ url });
 }

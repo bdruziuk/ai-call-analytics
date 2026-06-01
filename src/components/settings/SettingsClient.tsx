@@ -57,7 +57,7 @@ export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentSt
     if (!file) return;
     setUploadingPhoto(true);
     try {
-      // Upload to shared photo endpoint (saves to public/uploads/profiles/)
+      // Upload to shared photo endpoint (returns a base64 data URL)
       const formData = new FormData();
       formData.append("file", file);
       const uploadRes = await fetch("/api/profiles/photo", { method: "POST", body: formData });
