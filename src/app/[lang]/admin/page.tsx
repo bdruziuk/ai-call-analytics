@@ -62,16 +62,16 @@ export default async function AdminPage({ params }: Props) {
     minutesUsed: u.subscription?.minutesUsed ?? 0,
     createdAt: u.createdAt.toISOString(),
     updatedAt: u.updatedAt.toISOString(),
-    calls: u.calls.map((c) => ({
+    calls: u.calls.map((c: typeof u.calls[number]) => ({
       ...c,
       createdAt: c.createdAt.toISOString(),
       updatedAt: c.updatedAt.toISOString(),
     })),
-    salesProfiles: u.salesProfiles.map((p) => ({
+    salesProfiles: u.salesProfiles.map((p: typeof u.salesProfiles[number]) => ({
       ...p,
       createdAt: p.createdAt.toISOString(),
       updatedAt: p.updatedAt.toISOString(),
-      calls: p.calls.map((c) => ({
+      calls: p.calls.map((c: typeof p.calls[number]) => ({
         ...c,
         createdAt: c.createdAt.toISOString(),
         updatedAt: c.updatedAt.toISOString(),
