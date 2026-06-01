@@ -8,6 +8,7 @@ import {
   Clock, User, Search, Wifi, Trash2, UserPlus, X,
 } from "lucide-react";
 import type ukDict from "@/dictionaries/uk.json";
+import { ProfileAvatar } from "@/components/ProfileAvatar";
 
 type Dictionary = typeof ukDict;
 
@@ -519,8 +520,7 @@ function UserRow({
               <div key={profile.id} className="border-b border-slate-100 last:border-0">
                 <div className="flex items-center gap-2 bg-slate-50 px-5 py-2.5">
                   {profile.photo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={profile.photo} alt="" className="h-6 w-6 rounded-full object-cover" />
+                    <ProfileAvatar photo={profile.photo} name={profile.name} className="h-6 w-6" textClassName="text-xs" />
                   ) : (
                     <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[#1C78AE]/10">
                       <User size={12} className="text-[#1C78AE]" />

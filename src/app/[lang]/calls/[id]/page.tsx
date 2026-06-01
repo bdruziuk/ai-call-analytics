@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { db } from "@/lib/db";
 import { CallProcessing } from "@/components/calls/CallProcessing";
 import { getDictionary, hasLocale } from "@/lib/dictionaries";
@@ -157,14 +158,7 @@ export default async function CallDetailsPage({ params }: Props) {
         <InfoCard label={t.profiles.manager}>
           {salesProfile ? (
             <div className="flex items-center gap-2.5">
-              {salesProfile.photo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={salesProfile.photo} alt="" className="h-9 w-9 rounded-full object-cover shrink-0 border-2 border-brand-100" />
-              ) : (
-                <div className="h-9 w-9 rounded-full bg-brand-100 flex items-center justify-center shrink-0 text-brand-600 font-bold text-sm">
-                  {salesProfile.name.charAt(0).toUpperCase()}
-                </div>
-              )}
+              <ProfileAvatar photo={salesProfile.photo} name={salesProfile.name} className="h-9 w-9 border-2 border-brand-100" />
               <div>
                 <p className="font-semibold text-slate-900 text-sm">{salesProfile.name}</p>
                 {salesProfile.description && (

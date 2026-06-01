@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 import type ukDict from "@/dictionaries/uk.json";
+import { ProfileAvatar } from "@/components/ProfileAvatar";
 
 type Dictionary = typeof ukDict;
 
@@ -295,14 +296,7 @@ export function ProfilesClient({ t, lang, initialProfiles, maxManagers }: Props)
             <div className="sm:col-span-2">
               <label className="mb-2 block text-sm font-medium text-slate-700">{tp.photo}</label>
               <div className="flex items-center gap-4">
-                {form.photo ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={form.photo} alt="" className="h-16 w-16 rounded-full object-cover border-2 border-brand-100 shrink-0" />
-                ) : (
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-brand-200 bg-brand-50 text-xl font-semibold text-brand-300">
-                    {form.name ? form.name.charAt(0).toUpperCase() : "?"}
-                  </div>
-                )}
+                <ProfileAvatar photo={form.photo || null} name={form.name || "?"} className="h-16 w-16 border-2 border-brand-100" textClassName="text-xl" />
 
                 <div className="flex flex-wrap items-center gap-2">
                   <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
@@ -402,18 +396,7 @@ export function ProfilesClient({ t, lang, initialProfiles, maxManagers }: Props)
                 {/* ── Identity row ──────────────────────────────────── */}
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    {p.photo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={p.photo}
-                        alt=""
-                        className="h-11 w-11 shrink-0 rounded-full border-2 border-brand-100 object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-100 font-bold text-brand-600">
-                        {p.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    <ProfileAvatar photo={p.photo} name={p.name} className="h-11 w-11 border-2 border-brand-100" />
                     <div className="min-w-0">
                       <p className="truncate font-semibold text-slate-900">{p.name}</p>
                       {p.description && (

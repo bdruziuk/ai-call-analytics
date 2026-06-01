@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Eye, Loader2 } from "lucide-react";
+import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { useEffect, useRef, useState, useCallback } from "react";
 import type ukDict from "@/dictionaries/uk.json";
 
@@ -523,14 +524,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
                           className="flex items-center gap-2 hover:opacity-70 transition-opacity"
                           title={isFiltered ? t.profiles.allManagers : t.profiles.viewCalls}
                         >
-                          {profile.photo ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={profile.photo} alt="" className="h-6 w-6 rounded-full object-cover shrink-0 border border-slate-200" />
-                          ) : (
-                            <div className="h-6 w-6 rounded-full bg-brand-100 flex items-center justify-center shrink-0 text-xs font-semibold text-brand-600">
-                              {profile.name.charAt(0).toUpperCase()}
-                            </div>
-                          )}
+                          <ProfileAvatar photo={profile.photo} name={profile.name} className="h-6 w-6 border border-slate-200" textClassName="text-xs" />
                           <span className={isFiltered ? "font-semibold text-brand-700 underline" : "text-slate-700"}>
                             {profile.name}
                           </span>
