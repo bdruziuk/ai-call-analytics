@@ -146,7 +146,7 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
   for (const c of calls) {
     const pid  = c.salesProfileId ?? "__unassigned__";
     const name = c.salesProfileId ? (profileMap.get(c.salesProfileId) ?? "Unknown") : "Unassigned";
-    const m    = managerMap.get(pid) ?? { name, scores: [], sold: 0, total: 0, issues: [], mistakes: [] };
+    const m    = managerMap.get(pid) ?? { name, scores: [] as number[], sold: 0, total: 0, issues: [] as string[], mistakes: [] as string[] };
     m.total++;
     if (c.score !== null) m.scores.push(c.score);
     if (c.saleStatus === "sold") m.sold++;
