@@ -176,78 +176,111 @@ export function CallsTableClient({ t, lang, initialCalls, initialNextCursor = nu
   const sortedCalls = sortRows(calls, sortKey, sortDir);
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full border-collapse text-left">
-        <thead>
-          <tr className="border-b border-slate-100 bg-brand-50">
-            <SortableHeader col="createdAt"  label={t.calls.date}        sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-            <SortableHeader col="fileName"   label={t.calls.file}        sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-            <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700">{t.profiles.manager}</th>
-            <SortableHeader col="product"    label={t.calls.product}     sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-            <SortableHeader col="saleStatus" label={t.calls.sale}        sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-            <SortableHeader col="score"      label={t.calls.score}       sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-            <SortableHeader col="status"     label={t.calls.status}      sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-            <th className="px-4 py-3 w-10"></th>
-          </tr>
-        </thead>
+    <div>
+      {/* ── Mobile cards (< md) ── */}
+      <div className="md:hidden divide-y divide-slate-100">
+        {sortedCalls.length === 0 && (
+          <p className="px-4 py-12 text-center text-sm text-slate-400">{t.calls.noCallsYet}</p>
+        )}
+        {sortedCalls.map((call) => (
+          <Link
+            key={call.id}
+            href={`/${lang}/calls/${call.id}`}
+            className="flex items-start gap-3 px-4 py-4 hover:bg-slate-50 transition-colors"
+          >
+            {/* Status dot */}
+            <span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${
+              call.status === "completed" ? "bg-emerald-400" :
+              call.status === "failed"    ? "bg-red-400" :
+              call.status === "queued"    ? "bg-slate-300" :
+              "bg-brand-400 animate-pulse"
+            }`} />
 
-        <tbody className="divide-y divide-slate-100">
-          {sortedCalls.map((call) => (
-            <tr key={call.id} className="hover:bg-slate-50 transition-colors align-middle">
-              <td className="px-4 py-3 text-sm text-slate-600">
-                {new Date(call.createdAt).toLocaleDateString(t.dateLocale)}
-              </td>
-
-              <td className="px-4 py-3 text-sm font-medium text-slate-800 max-w-[180px] truncate">
-                {call.fileName}
-              </td>
-
-              <td className="px-4 py-3 text-sm text-slate-600">
-                {getProfileName(call.salesProfileId)}
-              </td>
-
-              <td className="px-4 py-3 text-sm text-slate-600">{call.product || "-"}</td>
-
-              <td className="px-4 py-3">
-                <SaleStatusBadge status={call.saleStatus} label={getSaleStatusLabel(call.saleStatus)} />
-              </td>
-
-              <td className="px-4 py-3 text-sm font-semibold">
-                {call.score
-                  ? <span className="text-brand-600">{call.score}<span className="font-normal text-slate-400 text-xs">/10</span></span>
-                  : <span className="text-slate-400">-</span>
-                }
-              </td>
-
-              <td className="px-4 py-3">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-slate-800">{call.fileName}</p>
+              <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <StatusBadge status={call.status} label={getStatusLabel(call.status)} />
-              </td>
+                {call.saleStatus && (
+                  <SaleStatusBadge status={call.saleStatus} label={getSaleStatusLabel(call.saleStatus)} />
+                )}
+              </div>
+              <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-400">
+                <span>{new Date(call.createdAt).toLocaleDateString(t.dateLocale)}</span>
+                {call.score !== null && (
+                  <span className="font-semibold text-brand-600">{call.score}<span className="font-normal text-slate-400">/10</span></span>
+                )}
+                {call.product && <span className="truncate max-w-[140px]">{call.product}</span>}
+                {call.salesProfileId && (
+                  <span>{getProfileName(call.salesProfileId)}</span>
+                )}
+              </div>
+            </div>
 
-              <td className="px-4 py-3 w-10 text-center">
-                <Link
-                  href={`/${lang}/calls/${call.id}`}
-                  title={t.calls.view}
-                  className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-brand-50 hover:text-brand-600 transition-colors"
-                >
-                  <Eye className="h-4 w-4" />
-                </Link>
-              </td>
+            <Eye className="h-4 w-4 shrink-0 text-slate-300 mt-1" />
+          </Link>
+        ))}
+
+        <div ref={sortedCalls.length > 0 ? sentinelRef : undefined} className="flex justify-center py-4">
+          {loading && <Loader2 className="h-5 w-5 animate-spin text-brand-400" />}
+        </div>
+      </div>
+
+      {/* ── Desktop table (≥ md) ── */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full border-collapse text-left">
+          <thead>
+            <tr className="border-b border-slate-100 bg-brand-50">
+              <SortableHeader col="createdAt"  label={t.calls.date}    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+              <SortableHeader col="fileName"   label={t.calls.file}    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700">{t.profiles.manager}</th>
+              <SortableHeader col="product"    label={t.calls.product} sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+              <SortableHeader col="saleStatus" label={t.calls.sale}    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+              <SortableHeader col="score"      label={t.calls.score}   sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+              <SortableHeader col="status"     label={t.calls.status}  sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+              <th className="px-4 py-3 w-10"></th>
             </tr>
-          ))}
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {sortedCalls.map((call) => (
+              <tr key={call.id} className="hover:bg-slate-50 transition-colors align-middle">
+                <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
+                  {new Date(call.createdAt).toLocaleDateString(t.dateLocale)}
+                </td>
+                <td className="px-4 py-3 text-sm font-medium text-slate-800 max-w-[180px] truncate">
+                  {call.fileName}
+                </td>
+                <td className="px-4 py-3 text-sm text-slate-600">{getProfileName(call.salesProfileId)}</td>
+                <td className="px-4 py-3 text-sm text-slate-600">{call.product || "-"}</td>
+                <td className="px-4 py-3">
+                  <SaleStatusBadge status={call.saleStatus} label={getSaleStatusLabel(call.saleStatus)} />
+                </td>
+                <td className="px-4 py-3 text-sm font-semibold">
+                  {call.score
+                    ? <span className="text-brand-600">{call.score}<span className="font-normal text-slate-400 text-xs">/10</span></span>
+                    : <span className="text-slate-400">-</span>
+                  }
+                </td>
+                <td className="px-4 py-3">
+                  <StatusBadge status={call.status} label={getStatusLabel(call.status)} />
+                </td>
+                <td className="px-4 py-3 w-10 text-center">
+                  <Link href={`/${lang}/calls/${call.id}`} title={t.calls.view}
+                    className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-brand-50 hover:text-brand-600 transition-colors"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Link>
+                </td>
+              </tr>
+            ))}
+            {calls.length === 0 && (
+              <tr><td colSpan={8} className="px-4 py-12 text-center text-slate-400">{t.calls.noCallsYet}</td></tr>
+            )}
+          </tbody>
+        </table>
 
-          {calls.length === 0 && (
-            <tr>
-              <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
-                {t.calls.noCallsYet}
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-
-      {/* Infinite scroll sentinel */}
-      <div ref={sentinelRef} className="flex justify-center py-4">
-        {loading && <Loader2 className="h-5 w-5 animate-spin text-brand-400" />}
+        <div ref={sentinelRef} className="flex justify-center py-4">
+          {loading && <Loader2 className="h-5 w-5 animate-spin text-brand-400" />}
+        </div>
       </div>
     </div>
   );

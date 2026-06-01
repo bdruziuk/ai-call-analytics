@@ -481,13 +481,71 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
           )}
         </div>
 
-        <div className="overflow-x-auto">
+        {/* ── Mobile cards (< md) ── */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {sortedCalls.length === 0 && (
+            <p className="px-4 py-12 text-center text-sm text-slate-400">{t.dashboard.table.noCallsYet}</p>
+          )}
+          {sortedCalls.map((call) => {
+            const profile = profiles.find((p) => p.id === call.salesProfileId);
+            return (
+              <Link
+                key={call.id}
+                href={`/${lang}/calls/${call.id}`}
+                className="flex items-start gap-3 px-4 py-4 hover:bg-slate-50 transition-colors"
+              >
+                {/* Left: status indicator */}
+                <span className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${
+                  call.status === "completed" ? "bg-emerald-400" :
+                  call.status === "failed"    ? "bg-red-400" :
+                  call.status === "queued"    ? "bg-slate-300" :
+                  "bg-brand-400 animate-pulse"
+                }`} />
+
+                {/* Center: main info */}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold text-slate-800">{call.fileName}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <StatusBadge status={call.status} label={getStatusLabel(call.status)} error={formatError(call.errorMessage)} />
+                    {call.saleStatus && (
+                      <SaleStatusBadge status={call.saleStatus} label={getSaleStatusLabel(call.saleStatus)} />
+                    )}
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-400">
+                    <span>{new Date(call.createdAt).toLocaleDateString(t.dateLocale)}</span>
+                    {call.score !== null && (
+                      <span className="font-semibold text-brand-600">{call.score}<span className="font-normal text-slate-400">/10</span></span>
+                    )}
+                    {call.product && <span className="truncate max-w-[140px]">{call.product}</span>}
+                    {profile && (
+                      <span className="flex items-center gap-1">
+                        <ProfileAvatar photo={profile.photo} name={profile.name} className="h-4 w-4" textClassName="text-[8px]" />
+                        {profile.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: chevron */}
+                <Eye className="h-4 w-4 shrink-0 text-slate-300 mt-1" />
+              </Link>
+            );
+          })}
+
+          {/* Infinite scroll sentinel */}
+          <div ref={sentinelRef} className="flex justify-center py-3">
+            {loadingMore && <Loader2 className="h-5 w-5 animate-spin text-brand-400" />}
+          </div>
+        </div>
+
+        {/* ── Desktop table (≥ md) ── */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="border-b border-slate-100 bg-brand-50">
                 <SortableHeader col="createdAt"  label={t.dashboard.table.date}    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                 <SortableHeader col="fileName"   label={t.dashboard.table.file}    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
-                <th className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700 md:table-cell">{t.dashboard.table.report}</th>
+                <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700">{t.dashboard.table.report}</th>
                 <th className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700 lg:table-cell">{t.profiles.manager}</th>
                 <th className="hidden px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700 lg:table-cell">{t.callLanguage.label}</th>
                 <SortableHeader col="product"    label={t.dashboard.table.product} sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
@@ -497,76 +555,47 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
                 <th className="px-4 py-3 w-10"></th>
               </tr>
             </thead>
-
             <tbody className="divide-y divide-slate-100">
               {sortedCalls.map((call) => (
                 <tr key={call.id} className="hover:bg-slate-50 transition-colors align-middle">
-                  <td className="px-3 py-3 text-xs text-slate-500 whitespace-nowrap md:px-4 md:text-sm md:text-slate-600">
+                  <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
                     {new Date(call.createdAt).toLocaleDateString(t.dateLocale)}
                   </td>
-
-                  <td className="px-3 py-3 text-sm font-medium text-slate-800 max-w-[120px] truncate md:px-4 md:max-w-[180px]">
+                  <td className="px-4 py-3 text-sm font-medium text-slate-800 max-w-[180px] truncate">
                     {call.fileName}
                   </td>
-
-                  <td className="hidden px-4 py-3 text-sm text-slate-600 md:table-cell">
+                  <td className="px-4 py-3 text-sm text-slate-600">
                     {getReportTypeLabel(call.reportType)}
                   </td>
-
                   <td className="hidden px-4 py-3 text-sm lg:table-cell">
                     {(() => {
                       const profile = profiles.find((p) => p.id === call.salesProfileId);
                       if (!profile) return <span className="text-slate-400">-</span>;
                       const isFiltered = filterProfileId === profile.id;
                       return (
-                        <button
-                          onClick={() => setFilterProfileId(isFiltered ? "" : profile.id)}
-                          className="flex items-center gap-2 hover:opacity-70 transition-opacity"
-                          title={isFiltered ? t.profiles.allManagers : t.profiles.viewCalls}
-                        >
+                        <button onClick={() => setFilterProfileId(isFiltered ? "" : profile.id)} className="flex items-center gap-2 hover:opacity-70 transition-opacity">
                           <ProfileAvatar photo={profile.photo} name={profile.name} className="h-6 w-6 border border-slate-200" textClassName="text-xs" />
-                          <span className={isFiltered ? "font-semibold text-brand-700 underline" : "text-slate-700"}>
-                            {profile.name}
-                          </span>
+                          <span className={isFiltered ? "font-semibold text-brand-700 underline" : "text-slate-700"}>{profile.name}</span>
                         </button>
                       );
                     })()}
                   </td>
-
                   <td className="hidden px-4 py-3 text-sm text-slate-600 lg:table-cell">{getLanguageLabel(call.language)}</td>
-
-                  <td className="px-3 py-3 text-xs text-slate-600 max-w-[80px] truncate md:px-4 md:text-sm md:max-w-none">{call.product || "-"}</td>
-
-                  <td className="px-3 py-3 md:px-4">
-                    <SaleStatusBadge status={call.saleStatus} label={getSaleStatusLabel(call.saleStatus)} />
-                  </td>
-
-                  <td className="px-3 py-3 text-sm font-semibold text-slate-800 md:px-4">
+                  <td className="px-4 py-3 text-sm text-slate-600">{call.product || "-"}</td>
+                  <td className="px-4 py-3"><SaleStatusBadge status={call.saleStatus} label={getSaleStatusLabel(call.saleStatus)} /></td>
+                  <td className="px-4 py-3 text-sm font-semibold">
                     {call.score ? <span className="text-brand-600">{call.score}<span className="font-normal text-slate-400 text-xs">/10</span></span> : <span className="text-slate-400">-</span>}
                   </td>
-
-                  <td className="px-3 py-3 md:px-4">
-                    <StatusBadge status={call.status} label={getStatusLabel(call.status)} error={formatError(call.errorMessage)} />
-                  </td>
-
-                  <td className="px-2 py-3 w-9 text-center md:px-4 md:w-10">
-                    <Link
-                      href={`/${lang}/calls/${call.id}`}
-                      title={t.dashboard.table.view}
-                      className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-brand-50 hover:text-brand-600 transition-colors"
-                    >
+                  <td className="px-4 py-3"><StatusBadge status={call.status} label={getStatusLabel(call.status)} error={formatError(call.errorMessage)} /></td>
+                  <td className="px-4 py-3 w-10 text-center">
+                    <Link href={`/${lang}/calls/${call.id}`} className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-brand-50 hover:text-brand-600 transition-colors">
                       <Eye className="h-4 w-4" />
                     </Link>
                   </td>
                 </tr>
               ))}
-
               {filteredCalls.length === 0 && (
-                <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center text-slate-400">
-                    {t.dashboard.table.noCallsYet}
-                  </td>
-                </tr>
+                <tr><td colSpan={10} className="px-4 py-12 text-center text-slate-400">{t.dashboard.table.noCallsYet}</td></tr>
               )}
             </tbody>
           </table>
