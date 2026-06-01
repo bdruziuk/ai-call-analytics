@@ -37,7 +37,8 @@ export default async function CallsPage({ params }: Props) {
   const nextCursor = hasMore ? rawCalls[rawCalls.length - 1].createdAt.toISOString() : null;
 
   // Serialise Date objects for the client component
-  const serialisedCalls = rawCalls.map((c) => ({
+  type CallRow = typeof rawCalls[number];
+  const serialisedCalls = rawCalls.map((c: CallRow) => ({
     id: c.id,
     fileName: c.fileName,
     status: c.status,

@@ -41,9 +41,11 @@ export default async function ProfilesPage({ params }: Props) {
   const maxManagers = dbUser?.isTestAccount ? null : getPlan(sub.planId).maxManagers;
 
   // Serialise Date → string so the client component receives plain JSON
-  const serialised = profiles.map((p) => ({
+  type ProfileRow = typeof profiles[number];
+  type CallRow    = ProfileRow["calls"][number];
+  const serialised = profiles.map((p: ProfileRow) => ({
     ...p,
-    calls: p.calls.map((c) => ({ ...c, createdAt: c.createdAt.toISOString() })),
+    calls: p.calls.map((c: CallRow) => ({ ...c, createdAt: c.createdAt.toISOString() })),
   }));
 
   return (
