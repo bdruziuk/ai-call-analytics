@@ -35,7 +35,8 @@ export default async function SettingsPage({ params, searchParams }: Props) {
     }),
   ]);
 
-  const apiKeys = rawKeys.map((k) => ({
+  type KeyRow = typeof rawKeys[number];
+  const apiKeys = rawKeys.map((k: KeyRow) => ({
     ...k,
     lastUsedAt: k.lastUsedAt?.toISOString() ?? null,
     createdAt:  k.createdAt.toISOString(),
