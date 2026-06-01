@@ -2,6 +2,8 @@ import Link from "next/link";
 import { hasLocale, locales, getDictionary } from "@/lib/dictionaries";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { Logo } from "@/components/Logo";
+import { MobileNav } from "@/components/MobileNav";
+import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { notFound } from "next/navigation";
@@ -46,113 +48,81 @@ export default async function LangLayout({ children, params }: Props) {
       .map((e) => e.trim().toLowerCase())
       .includes((session.user.email ?? "").toLowerCase());
 
+  const navItems = session?.user
+    ? [
+        { href: `/${lang}/dashboard`, label: t.nav.dashboard, icon: <LayoutDashboard size={18} /> },
+        { href: `/${lang}/calls`,     label: t.nav.calls,     icon: <PhoneCall size={18} /> },
+        { href: `/${lang}/profiles`,  label: t.nav.managers,  icon: <Users size={18} /> },
+        { href: `/${lang}/analytics`, label: t.nav.analytics, icon: <BarChart2 size={18} /> },
+        { href: `/${lang}/api-docs`,  label: t.nav.apiDocs,   icon: <Code2 size={18} /> },
+        ...(isAdmin ? [{ href: `/${lang}/admin`, label: t.admin.title, icon: <Shield size={18} /> }] : []),
+      ]
+    : [];
+
   return (
     <>
-      {/* Header — brand-300 = PANTONE 2905 PC background, dark text on top */}
-      <header className="flex items-center justify-between bg-brand-300 px-8 py-3 shadow-sm border-b border-brand-400">
-        {/* Logo + nav */}
+      {/* Header */}
+      <header className="relative flex items-center justify-between bg-brand-300 px-4 py-3 shadow-sm border-b border-brand-400 md:px-8">
+
+        {/* Left: logo + desktop nav */}
         <div className="flex items-center gap-6">
           <Logo lang={lang} size="sm" />
 
           {session?.user && (
-            <nav className="flex items-center gap-1">
-              <Link
-                href={`/${lang}/dashboard`}
-                title={t.nav.dashboard}
-                className="rounded-lg p-2 text-brand-800 hover:bg-brand-400 hover:text-brand-900 transition-colors"
-              >
-                <LayoutDashboard size={20} />
-                <span className="sr-only">{t.nav.dashboard}</span>
-              </Link>
-              <Link
-                href={`/${lang}/calls`}
-                title={t.nav.calls}
-                className="rounded-lg p-2 text-brand-800 hover:bg-brand-400 hover:text-brand-900 transition-colors"
-              >
-                <PhoneCall size={20} />
-                <span className="sr-only">{t.nav.calls}</span>
-              </Link>
-              <Link
-                href={`/${lang}/profiles`}
-                title={t.nav.managers}
-                className="rounded-lg p-2 text-brand-800 hover:bg-brand-400 hover:text-brand-900 transition-colors"
-              >
-                <Users size={20} />
-                <span className="sr-only">{t.nav.managers}</span>
-              </Link>
-
-              <Link
-                href={`/${lang}/analytics`}
-                title={t.nav.analytics}
-                className="rounded-lg p-2 text-brand-800 hover:bg-brand-400 hover:text-brand-900 transition-colors"
-              >
-                <BarChart2 size={20} />
-                <span className="sr-only">{t.nav.analytics}</span>
-              </Link>
-
-              <Link
-                href={`/${lang}/api-docs`}
-                title={t.nav.apiDocs}
-                className="rounded-lg p-2 text-brand-800 hover:bg-brand-400 hover:text-brand-900 transition-colors"
-              >
-                <Code2 size={20} />
-                <span className="sr-only">{t.nav.apiDocs}</span>
-              </Link>
-
-              {isAdmin && (
+            <nav className="hidden md:flex items-center gap-1">
+              {navItems.map((item) => (
                 <Link
-                  href={`/${lang}/admin`}
-                  title={t.admin.title}
+                  key={item.href}
+                  href={item.href}
+                  title={item.label}
                   className="rounded-lg p-2 text-brand-800 hover:bg-brand-400 hover:text-brand-900 transition-colors"
                 >
-                  <Shield size={20} />
-                  <span className="sr-only">{t.admin.title}</span>
+                  {item.icon}
+                  <span className="sr-only">{item.label}</span>
                 </Link>
-              )}
+              ))}
             </nav>
           )}
         </div>
 
-        {/* Right: user area */}
-        <div className="flex items-center gap-3">
+        {/* Right: user area + mobile hamburger */}
+        <div className="flex items-center gap-2">
           {session?.user ? (
             <>
-              {/* Clickable user pill → settings page */}
+              {/* User pill → settings */}
               <Link
                 href={`/${lang}/settings`}
-                className="flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 transition-colors hover:bg-brand-400"
+                className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-brand-400"
               >
-                {userImage ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={userImage}
-                    alt=""
-                    className="h-7 w-7 rounded-full object-cover ring-2 ring-brand-600"
-                  />
-                ) : (
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-bold text-white">
-                    {initials}
-                  </span>
-                )}
-                <span className="text-sm font-medium text-brand-900">
+                <ProfileAvatar
+                  photo={userImage}
+                  name={userName || session.user.email || "?"}
+                  className="h-7 w-7 ring-2 ring-brand-600"
+                  textClassName="text-xs font-bold"
+                />
+                <span className="hidden sm:block text-sm font-medium text-brand-900">
                   {userName || session.user.email}
                 </span>
               </Link>
 
               <SignOutButton t={t} lang={lang} />
+
+              {/* Mobile hamburger (hidden on md+) */}
+              <div className="md:hidden">
+                <MobileNav items={navItems} />
+              </div>
             </>
           ) : (
-            /* Unauthenticated — show Sign In + Register */
             <div className="flex items-center gap-2">
               <Link
                 href={`/${lang}/auth/signin`}
-                className="rounded-lg border border-brand-500/40 px-4 py-1.5 text-sm font-semibold text-brand-800 transition-colors hover:bg-brand-400"
+                className="rounded-lg border border-brand-500/40 px-3 py-1.5 text-sm font-semibold text-brand-800 transition-colors hover:bg-brand-400"
               >
                 {t.auth.signin}
               </Link>
               <Link
                 href={`/${lang}/auth/register`}
-                className="rounded-lg bg-brand-600 px-4 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700"
+                className="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-700"
               >
                 {t.auth.register}
               </Link>
