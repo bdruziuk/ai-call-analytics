@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { usePathname, useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import type ukDict from "@/dictionaries/uk.json";
 import { ApiKeySection, type ApiKeyRecord } from "@/components/settings/ApiKeySection";
@@ -40,7 +40,7 @@ const languages = [
 ];
 
 export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentStatus, isTestAccount = false }: Props) {
-  const { update: updateSession }   = useSession();
+  const router                      = useRouter();
   const [name, setName]             = useState(user.name ?? "");
   const [image, setImage]           = useState(user.image ?? "");
   const [saveState, setSaveState]   = useState<"idle" | "saving" | "saved">("idle");
@@ -74,7 +74,7 @@ export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentSt
       });
 
       setImage(url);
-      await updateSession({ image: url }); // flush stale URL from JWT
+      router.refresh(); // re-fetch server session with updated image
     } finally {
       setUploadingPhoto(false);
       e.target.value = "";
@@ -90,7 +90,7 @@ export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentSt
         body: JSON.stringify({ image: null }),
       });
       setImage("");
-      await updateSession({ image: null }); // flush stale URL from JWT
+      router.refresh(); // re-fetch server session with cleared image
     } finally {
       setUploadingPhoto(false);
     }
