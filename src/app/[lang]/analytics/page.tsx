@@ -73,7 +73,10 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
 
   /* ── Aggregate ── */
 
-  const profileMap = new Map(profiles.map((p) => [p.id, p.name]));
+  type CallRow    = typeof calls[number];
+  type ProfileRow = typeof profiles[number];
+
+  const profileMap = new Map(profiles.map((p: ProfileRow) => [p.id, p.name]));
   const total      = calls.length;
 
   if (total === 0) {
@@ -91,15 +94,15 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
   // Sale distribution
   let sold = 0, notSold = 0, potential = 0;
   for (const c of calls) {
-    if (c.saleStatus === "sold")           sold++;
-    else if (c.saleStatus === "not_sold")  notSold++;
+    if (c.saleStatus === "sold")                sold++;
+    else if (c.saleStatus === "not_sold")       notSold++;
     else if (c.saleStatus === "potential_sale") potential++;
   }
 
   // Average score
-  const scored  = calls.filter((c) => c.score !== null);
+  const scored   = calls.filter((c: CallRow) => c.score !== null);
   const avgScore = scored.length
-    ? Math.round((scored.reduce((s, c) => s + c.score!, 0) / scored.length) * 10) / 10
+    ? Math.round((scored.reduce((s: number, c: CallRow) => s + c.score!, 0) / scored.length) * 10) / 10
     : null;
 
   // Score trend (monthly)
