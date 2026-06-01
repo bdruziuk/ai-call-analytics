@@ -442,18 +442,18 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
       </section>
 
       {/* Stats */}
-      <div className="mb-8 grid gap-4 md:grid-cols-4">
+      <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         {[
           { label: t.dashboard.stats.totalCalls, value: calls.length, unit: "" },
           { label: t.dashboard.stats.averageScore, value: averageScore, unit: "/10" },
           { label: t.dashboard.stats.conversionRate, value: saleRate, unit: "%" },
           { label: t.dashboard.stats.errors, value: failedCalls, unit: "" },
         ].map(({ label, value, unit }) => (
-          <div key={label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
-            <p className="mt-2 text-3xl font-bold text-brand-600">
+          <div key={label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-500 leading-tight">{label}</p>
+            <p className="mt-1.5 text-2xl font-bold text-brand-600 md:mt-2 md:text-3xl">
               {value}
-              {unit && <span className="ml-0.5 text-base font-medium text-slate-400">{unit}</span>}
+              {unit && <span className="ml-0.5 text-sm font-medium text-slate-400 md:text-base">{unit}</span>}
             </p>
           </div>
         ))}
