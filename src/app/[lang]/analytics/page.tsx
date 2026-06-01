@@ -76,7 +76,7 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
   type CallRow    = typeof calls[number];
   type ProfileRow = typeof profiles[number];
 
-  const profileMap = new Map(profiles.map((p: ProfileRow) => [p.id, p.name]));
+  const profileMap = new Map<string, string>(profiles.map((p: ProfileRow) => [p.id, String(p.name)]));
   const total      = calls.length;
 
   if (total === 0) {
