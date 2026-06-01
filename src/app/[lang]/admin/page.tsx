@@ -56,7 +56,7 @@ export default async function AdminPage({ params }: Props) {
   });
 
   // Serialise Date → string so client components receive plain JSON
-  const serialised = users.map((u) => ({
+  const serialised = users.map((u: typeof users[number]) => ({
     ...u,
     planId:      u.subscription?.planId     ?? "free",
     minutesUsed: u.subscription?.minutesUsed ?? 0,
