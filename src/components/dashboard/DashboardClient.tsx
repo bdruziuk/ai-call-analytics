@@ -198,17 +198,13 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
   // Loads the first page and merges into state (preserving older calls already scrolled in).
   async function loadCalls() {
     const res = await fetch("/api/calls?limit=30", { cache: "no-store" });
-    console.log("[poll] status", res.status, "ct", res.headers.get("content-type"));
     if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
     const { calls: fresh, nextCursor: nc }: { calls: CallItem[]; nextCursor: string | null } =
       await res.json();
-    console.log("[poll] fresh", fresh.map(c => ({ id: c.id.slice(-6), status: c.status, score: c.score })));
     setCalls((prev) => {
       const freshIds = new Set(fresh.map((c) => c.id));
-      const extra = prev.filter((c) => !freshIds.has(c.id));
-      const next = [...fresh, ...extra];
-      console.log("[poll] setCalls prev", prev.map(c => c.status), "→ next", next.map(c => c.status));
-      return next;
+      const extra    = prev.filter((c) => !freshIds.has(c.id));
+      return [...fresh, ...extra];
     });
     setNextCursor(nc);
   }
@@ -311,8 +307,9 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
   }
 
   useEffect(() => {
-    loadCalls();
-    const id = window.setInterval(loadCalls, 3000);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadCalls(); // async — state updates happen inside the resolved promise
+    const id = window.setInterval(() => void loadCalls(), 3000);
     return () => window.clearInterval(id);
   }, []);
 

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ChevronDown, ChevronRight, RefreshCw, Shield,
   Users, PhoneCall, CheckCircle2, XCircle, Loader2,
-  Clock, AlertTriangle, User, Search, Wifi, Trash2, UserPlus, X,
+  Clock, User, Search, Wifi, Trash2, UserPlus, X,
 } from "lucide-react";
 import type ukDict from "@/dictionaries/uk.json";
 
@@ -683,6 +683,7 @@ function CreateAccountModal({
         googleId:      null,
         isTestAccount: data.isTestAccount,
         planId:        data.planId ?? planId,
+        minutesUsed:   0,
         createdAt:     data.createdAt,
         calls:         [],
         salesProfiles: [],
@@ -788,7 +789,7 @@ function CreateAccountModal({
 
 /* ── Main admin panel ─────────────────────────────────────────────────────── */
 
-export function AdminPanel({ t, lang, initialUsers }: Props) {
+export function AdminPanel({ t, initialUsers }: Props) {
   const router = useRouter();
   const locale = t.dateLocale;
 

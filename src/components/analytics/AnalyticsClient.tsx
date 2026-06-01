@@ -61,7 +61,6 @@ const BRAND   = "#1C78AE";
 const EMERALD = "#10b981";
 const AMBER   = "#f59e0b";
 const RED     = "#ef4444";
-const PIE_COLORS = [EMERALD, RED, AMBER, "#94a3b8"];
 
 /* ── Date helpers ────────────────────────────────────────────────────────── */
 
@@ -194,35 +193,46 @@ function ChartCard({ title, children, className = "" }: {
 
 /* ── AI report section ───────────────────────────────────────────────────── */
 
+type BlockProps = {
+  id: string;
+  title: string;
+  items: string[];
+  highlight?: boolean;
+  expanded: string | null;
+  onToggle: (id: string) => void;
+};
+
+function Block({ id, title, items, highlight, expanded, onToggle }: BlockProps) {
+  const open = expanded === id;
+  return (
+    <div className={`rounded-xl border ${highlight ? "border-brand-200 bg-brand-50" : "border-slate-100 bg-slate-50"}`}>
+      <button
+        onClick={() => onToggle(id)}
+        className="flex w-full items-center justify-between px-4 py-3 text-left"
+      >
+        <span className={`text-sm font-semibold ${highlight ? "text-brand-800" : "text-slate-700"}`}>{title}</span>
+        {open ? <ChevronUp size={15} className="text-slate-400" /> : <ChevronDown size={15} className="text-slate-400" />}
+      </button>
+      {open && (
+        <ul className="space-y-2 px-4 pb-4">
+          {items.map((item, i) => (
+            <li key={i} className="flex gap-2 text-sm text-slate-700">
+              <span className={`mt-0.5 shrink-0 font-bold ${highlight ? "text-brand-500" : "text-slate-400"}`}>{i + 1}.</span>
+              {item}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function AISection({ report, t }: { report: AIReport; t: Dictionary["analytics"] }) {
   const [expanded, setExpanded] = useState<string | null>("summary");
-
-  function Block({ id, title, items, highlight }: {
-    id: string; title: string; items: string[]; highlight?: boolean;
-  }) {
-    const open = expanded === id;
-    return (
-      <div className={`rounded-xl border ${highlight ? "border-brand-200 bg-brand-50" : "border-slate-100 bg-slate-50"}`}>
-        <button
-          onClick={() => setExpanded(open ? null : id)}
-          className="flex w-full items-center justify-between px-4 py-3 text-left"
-        >
-          <span className={`text-sm font-semibold ${highlight ? "text-brand-800" : "text-slate-700"}`}>{title}</span>
-          {open ? <ChevronUp size={15} className="text-slate-400" /> : <ChevronDown size={15} className="text-slate-400" />}
-        </button>
-        {open && (
-          <ul className="space-y-2 px-4 pb-4">
-            {items.map((item, i) => (
-              <li key={i} className="flex gap-2 text-sm text-slate-700">
-                <span className={`mt-0.5 shrink-0 font-bold ${highlight ? "text-brand-500" : "text-slate-400"}`}>{i + 1}.</span>
-                {item}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    );
-  }
+  const handleToggle = useCallback(
+    (id: string) => setExpanded((prev) => (prev === id ? null : id)),
+    [],
+  );
 
   return (
     <div className="space-y-4 rounded-2xl border border-brand-200 bg-white p-6 shadow-sm">
@@ -237,9 +247,9 @@ function AISection({ report, t }: { report: AIReport; t: Dictionary["analytics"]
         <p className="text-sm text-slate-700 leading-relaxed">{report.summary}</p>
       </div>
 
-      <Block id="team"    title={t.teamRecs}           items={report.teamRecommendations} highlight />
-      <Block id="process" title={t.processImprovements} items={report.processImprovements} />
-      <Block id="obj"     title={t.objectionHandling}   items={report.objectionHandling} />
+      <Block id="team"    title={t.teamRecs}            items={report.teamRecommendations} highlight expanded={expanded} onToggle={handleToggle} />
+      <Block id="process" title={t.processImprovements} items={report.processImprovements}          expanded={expanded} onToggle={handleToggle} />
+      <Block id="obj"     title={t.objectionHandling}   items={report.objectionHandling}            expanded={expanded} onToggle={handleToggle} />
 
       {/* Manager coaching */}
       {report.managerCoaching?.length > 0 && (
@@ -412,21 +422,22 @@ export function AnalyticsClient({ t, lang, data, periodFrom, periodTo }: Props) 
                 </Pie>
                 <Tooltip
                   contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }}
-                  formatter={(value: number, name: string) => {
+                  formatter={(value) => {
+                    const v     = value as number;
                     const total = saleDistData.reduce((s, d) => s + d.value, 0);
-                    const pct   = total > 0 ? Math.round((value / total) * 100) : 0;
-                    return [`${value} (${pct}%)`, name];
+                    const pct   = total > 0 ? Math.round((v / total) * 100) : 0;
+                    return [`${v} (${pct}%)`];
                   }}
                 />
                 <Legend
                   iconType="circle"
                   iconSize={8}
                   wrapperStyle={{ fontSize: 12, paddingTop: 4 }}
-                  formatter={(value: string, entry: { payload?: { value: number } }) => {
+                  formatter={(value, entry) => {
                     const total = saleDistData.reduce((s, d) => s + d.value, 0);
-                    const v     = entry.payload?.value ?? 0;
+                    const v     = (entry as unknown as { payload?: { value: number } }).payload?.value ?? 0;
                     const pct   = total > 0 ? Math.round((v / total) * 100) : 0;
-                    return `${value} — ${v} (${pct}%)`;
+                    return `${String(value)} — ${v} (${pct}%)`;
                   }}
                 />
               </PieChart>
@@ -448,8 +459,8 @@ export function AnalyticsClient({ t, lang, data, periodFrom, periodTo }: Props) 
                 <YAxis domain={[0, 10]} tick={{ fontSize: 11, fill: "#94a3b8" }} />
                 <Tooltip
                   contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }}
-                  formatter={(v: number, name: string) => [
-                    name === "score" ? `${v}/10` : `${v} ${ta.callsUnit}`,
+                  formatter={(value, name) => [
+                    name === "score" ? `${value}/10` : `${value} ${ta.callsUnit}`,
                     name === "score" ? ta.avgScore : ta.totalCalls,
                   ]}
                 />

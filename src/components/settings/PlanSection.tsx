@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Zap, AlertTriangle } from "lucide-react";
 import type ukDict from "@/dictionaries/uk.json";
 import { PLANS, PLAN_ORDER, type PlanId } from "@/lib/plans";
@@ -39,7 +38,6 @@ export function PlanSection({
   hasStripeSubscription,
   paymentStatus,
 }: Props) {
-  const router  = useRouter();
   const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
   const [portalLoading,  setPortalLoading]  = useState(false);
 
