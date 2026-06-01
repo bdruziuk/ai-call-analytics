@@ -93,16 +93,16 @@ export default async function HomePage({ params }: Props) {
       </section>
 
       {/* ── Stats bar ────────────────────────────────────────────────────────── */}
-      <section className="bg-[#06142E] py-10">
-        <dl className="mx-auto grid max-w-3xl grid-cols-3 divide-x divide-white/10 px-6">
+      <section className="bg-[#06142E] py-8 md:py-10">
+        <dl className="mx-auto grid max-w-3xl grid-cols-3 divide-x divide-white/10 px-2 md:px-6">
           {[
             { value: "3",     label: t.home.stat1Label },
             { value: "12+",   label: t.home.stat2Label },
             { value: "< 60s", label: t.home.stat3Label },
           ].map(({ value, label }) => (
-            <div key={label} className="flex flex-col items-center gap-1 px-4 text-center">
-              <dt className="text-3xl font-extrabold text-white">{value}</dt>
-              <dd className="text-xs font-medium uppercase tracking-widest text-white/40">
+            <div key={label} className="flex flex-col items-center gap-1 px-2 text-center md:px-4">
+              <dt className="text-2xl font-extrabold text-white md:text-3xl">{value}</dt>
+              <dd className="text-[10px] font-medium uppercase tracking-widest text-white/40 md:text-xs">
                 {label}
               </dd>
             </div>
