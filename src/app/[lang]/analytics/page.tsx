@@ -4,7 +4,6 @@ import { authOptions } from "@/auth";
 import { getDictionary, hasLocale } from "@/lib/dictionaries";
 import { db } from "@/lib/db";
 import { AnalyticsClient } from "@/components/analytics/AnalyticsClient";
-import type { Prisma } from "@prisma/client";
 
 type Props = {
   params:       Promise<{ lang: string }>;
@@ -13,7 +12,7 @@ type Props = {
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 
-function toArr(v: Prisma.JsonValue | null): string[] {
+function toArr(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
   return v.map((x) => String(x)).filter(Boolean);
 }
