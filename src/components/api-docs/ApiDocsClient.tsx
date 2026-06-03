@@ -520,7 +520,7 @@ function WebhookUrlBuilder({
         <label className="mb-1.5 block text-sm font-medium text-slate-700">
           {d.reportTypeLabel}
         </label>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {(["high_level", "medium", "detailed"] as const).map((rt) => (
             <button
               key={rt}
@@ -543,22 +543,20 @@ function WebhookUrlBuilder({
           <label className="mb-1.5 block text-sm font-medium text-slate-700">
             {d.integrationBUrlLabel}
           </label>
-          <div className="flex items-start gap-2">
-            <code className="flex-1 rounded-lg bg-slate-100 px-3 py-2 text-xs font-mono text-slate-800 break-all leading-relaxed">
-              {webhookUrl}
-            </code>
-            <button
-              onClick={copyUrl}
-              className="shrink-0 flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5 text-emerald-500" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-              {copied ? d.copied : d.copy}
-            </button>
-          </div>
+          <code className="block w-full rounded-lg bg-slate-100 px-3 py-2 text-xs font-mono text-slate-800 break-all leading-relaxed">
+            {webhookUrl}
+          </code>
+          <button
+            onClick={copyUrl}
+            className="mt-2 flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+            {copied ? d.copied : d.copy}
+          </button>
         </div>
       ) : (
         <div className="rounded-lg bg-slate-50 px-4 py-3">
