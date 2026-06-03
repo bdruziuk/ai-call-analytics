@@ -223,9 +223,9 @@ function CallsTable({
                   <button
                     onClick={() => handleDeleteCall(c.id)}
                     disabled={deletingCall === c.id}
-                    className="rounded p-1 text-slate-300 hover:text-red-500 disabled:opacity-40"
+                    className="rounded p-2 text-slate-300 hover:text-red-500 disabled:opacity-40"
                   >
-                    {deletingCall === c.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                    {deletingCall === c.id ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
                   </button>
                 </div>
               </div>
@@ -597,11 +597,11 @@ function UserRow({
                     onClick={() => handleDeleteProfile(profile.id, profile.name)}
                     disabled={deletingProfile === profile.id}
                     title={t.admin.deleteProfile}
-                    className="ml-1 rounded p-1 text-slate-300 hover:text-red-500 transition-colors disabled:opacity-40"
+                    className="ml-1 rounded p-1.5 text-slate-300 hover:text-red-500 transition-colors disabled:opacity-40"
                   >
                     {deletingProfile === profile.id
-                      ? <Loader2 size={12} className="animate-spin" />
-                      : <Trash2 size={12} />
+                      ? <Loader2 size={15} className="animate-spin" />
+                      : <Trash2 size={15} />
                     }
                   </button>
                 </div>

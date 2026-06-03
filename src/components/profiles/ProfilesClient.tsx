@@ -264,12 +264,12 @@ export function ProfilesClient({ t, lang, initialProfiles, maxManagers }: Props)
   return (
     <div>
       {/* ── Page header ──────────────────────────────────────────────────── */}
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">{tp.title}</h1>
+          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{tp.title}</h1>
           <p className="mt-1 text-sm text-slate-500">{tp.subtitle}</p>
         </div>
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-start gap-1 sm:items-end">
           <button
             onClick={openCreate}
             disabled={atLimit}

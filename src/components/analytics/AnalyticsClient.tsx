@@ -111,27 +111,26 @@ function PeriodSelector({ ta, lang, currentFrom, currentTo }: PeriodSelectorProp
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="space-y-2">
       {/* Preset buttons */}
-      {presets.map((p) => (
-        <button
-          key={p.label}
-          onClick={() => navigate(p.from, p.to)}
-          className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
-            isActive(p.from, p.to)
-              ? "border-brand-500 bg-brand-600 text-white"
-              : "border-slate-200 bg-white text-slate-600 hover:border-brand-400 hover:text-brand-700"
-          }`}
-        >
-          {p.label}
-        </button>
-      ))}
+      <div className="flex flex-wrap gap-2">
+        {presets.map((p) => (
+          <button
+            key={p.label}
+            onClick={() => navigate(p.from, p.to)}
+            className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
+              isActive(p.from, p.to)
+                ? "border-brand-500 bg-brand-600 text-white"
+                : "border-slate-200 bg-white text-slate-600 hover:border-brand-400 hover:text-brand-700"
+            }`}
+          >
+            {p.label}
+          </button>
+        ))}
+      </div>
 
-      {/* Divider */}
-      <span className="h-5 w-px bg-slate-200" />
-
-      {/* Custom date range */}
-      <div className="flex items-center gap-1.5 flex-wrap">
+      {/* Custom date range — full row on mobile */}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
         <span className="text-xs text-slate-400">{ta.periodFrom}</span>
         <input
           type="date"
@@ -307,7 +306,7 @@ export function AnalyticsClient({ t, lang, data, periodFrom, periodTo }: Props) 
   /* ── Empty state ── */
   if (!data) {
     return (
-      <main className="mx-auto max-w-6xl px-6 py-12 space-y-5">
+      <main className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-12 space-y-5">
         <div>
           <h1 className="text-2xl font-bold text-[#0B344E]">{ta.title}</h1>
           <p className="mt-1 text-sm text-slate-500">{ta.subtitle}</p>
@@ -343,10 +342,10 @@ export function AnalyticsClient({ t, lang, data, periodFrom, periodTo }: Props) 
 
   /* ── Layout ── */
   return (
-    <main className="mx-auto max-w-6xl px-6 py-8 space-y-6">
+    <main className="mx-auto max-w-6xl px-4 py-6 md:px-6 md:py-8 space-y-6">
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[#0B344E]">{ta.title}</h1>
           <p className="mt-1 text-sm text-slate-500">{ta.subtitle}</p>
@@ -360,7 +359,7 @@ export function AnalyticsClient({ t, lang, data, periodFrom, periodTo }: Props) 
         <button
           onClick={handleGenerate}
           disabled={generating}
-          className="flex shrink-0 items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors disabled:opacity-60"
+          className="self-start flex shrink-0 items-center gap-2 rounded-xl bg-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-brand-700 transition-colors disabled:opacity-60 sm:self-auto"
         >
           {generating
             ? <><Loader2 size={15} className="animate-spin" />{ta.generating}</>

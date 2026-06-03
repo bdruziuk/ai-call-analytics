@@ -823,10 +823,10 @@ export function ApiDocsClient({ t, lang }: Props) {
   const baseUrl = "https://your-domain.com";
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10 space-y-10">
+    <main className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-10 space-y-8 md:space-y-10">
       {/* ── Header ── */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">{d.title}</h1>
+        <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">{d.title}</h1>
         <p className="mt-2 text-slate-500">{d.subtitle}</p>
         <Link
           href={`/${lang}/settings`}
@@ -1076,13 +1076,30 @@ async function analyzeCall(filePath, apiKey) {
           TAB: Integrations — two-column layout
          ══════════════════════════════════════════════════════════════════════ */}
       {tab === "integrations" && (
-        <div className="flex gap-6 items-start">
-          {/* ── Left sidebar ── */}
-          <aside className="w-44 shrink-0 sticky top-6">
-            <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-slate-400">
+        <div className="flex flex-col gap-6 md:flex-row md:items-start">
+          {/* ── Integration selector: horizontal scroll on mobile, sidebar on md+ ── */}
+          <aside className="md:w-44 md:shrink-0 md:sticky md:top-6">
+            <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-widest text-slate-400 md:px-3">
               {d.integrationSidebarTitle}
             </p>
-            <nav className="space-y-0.5">
+            {/* Mobile: horizontal pill row */}
+            <div className="flex gap-2 overflow-x-auto pb-1 md:hidden">
+              {INTEGRATIONS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  onClick={() => setIntegration(id)}
+                  className={`shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors whitespace-nowrap ${
+                    integration === id
+                      ? "bg-brand-600 text-white"
+                      : "border border-slate-200 text-slate-600 hover:border-brand-300"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            {/* Desktop: vertical nav */}
+            <nav className="hidden md:block space-y-0.5">
               {INTEGRATIONS.map(({ id, label }) => (
                 <button
                   key={id}
