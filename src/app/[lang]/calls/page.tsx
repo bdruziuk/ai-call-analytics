@@ -50,8 +50,8 @@ export default async function CallsPage({ params }: Props) {
   }));
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-6 md:p-8">
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <main className="mx-auto max-w-6xl py-6 md:p-8">
+      <div className="mb-6 flex flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between md:px-0">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t.calls.title}</h1>
           <p className="mt-1 text-sm text-slate-500">{t.calls.subtitle}</p>
@@ -65,7 +65,7 @@ export default async function CallsPage({ params }: Props) {
         </Link>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="border-y border-slate-200 bg-white shadow-sm sm:rounded-2xl sm:border sm:mx-0 md:overflow-hidden">
         <CallsTableClient
           t={t}
           lang={lang}
