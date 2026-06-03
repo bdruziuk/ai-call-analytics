@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, Loader2, X } from "lucide-react";
+import { Eye, Loader2, Trash2, X } from "lucide-react";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { useEffect, useRef, useState, useCallback } from "react";
 import type ukDict from "@/dictionaries/uk.json";
@@ -139,12 +139,26 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const fileInputRef  = useRef<HTMLInputElement>(null);
   const sentinelRef   = useRef<HTMLDivElement>(null);
 
   function handleSort(key: SortKey) {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir("asc"); }
+  }
+
+  async function handleDelete(id: string) {
+    if (!window.confirm(t.admin.deleteCallConfirm)) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/calls/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setCalls((prev) => prev.filter((c) => c.id !== id));
+      }
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   function getLanguageLabel(lang: string | null): string {
@@ -489,11 +503,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
           {sortedCalls.map((call) => {
             const profile = profiles.find((p) => p.id === call.salesProfileId);
             return (
-              <Link
-                key={call.id}
-                href={`/${lang}/calls/${call.id}`}
-                className="flex items-start gap-3 px-4 py-4 hover:bg-slate-50 transition-colors"
-              >
+              <div key={call.id} className="flex items-start gap-3 px-4 py-4 hover:bg-slate-50 transition-colors">
                 {/* Left: status indicator */}
                 <span className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${
                   call.status === "completed" ? "bg-emerald-400" :
@@ -502,8 +512,8 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
                   "bg-brand-400 animate-pulse"
                 }`} />
 
-                {/* Center: main info */}
-                <div className="min-w-0 flex-1">
+                {/* Center: main info (tappable link) */}
+                <Link href={`/${lang}/calls/${call.id}`} className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-slate-800">{call.fileName}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                     <StatusBadge status={call.status} label={getStatusLabel(call.status)} error={formatError(call.errorMessage)} />
@@ -524,11 +534,25 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
                       </span>
                     )}
                   </div>
-                </div>
+                </Link>
 
-                {/* Right: chevron */}
-                <Eye className="h-4 w-4 shrink-0 text-slate-300 mt-1" />
-              </Link>
+                {/* Right: actions */}
+                <div className="flex shrink-0 items-center gap-2 mt-0.5">
+                  <Link href={`/${lang}/calls/${call.id}`} aria-label={t.dashboard.table.view} className="rounded-lg p-2 text-slate-300 hover:bg-brand-50 hover:text-brand-600 transition-colors">
+                    <Eye className="h-5 w-5" />
+                  </Link>
+                  <button
+                    onClick={() => handleDelete(call.id)}
+                    disabled={deletingId === call.id}
+                    aria-label={t.admin.deleteCall}
+                    className="rounded-lg p-2 text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-40"
+                  >
+                    {deletingId === call.id
+                      ? <Loader2 className="h-5 w-5 animate-spin" />
+                      : <Trash2 className="h-5 w-5" />}
+                  </button>
+                </div>
+              </div>
             );
           })}
 
@@ -552,6 +576,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
                 <SortableHeader col="saleStatus" label={t.dashboard.table.sale}    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                 <SortableHeader col="score"      label={t.dashboard.table.score}   sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
                 <SortableHeader col="status"     label={t.dashboard.table.status}  sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+                <th className="px-4 py-3 w-10"></th>
                 <th className="px-4 py-3 w-10"></th>
               </tr>
             </thead>
@@ -592,10 +617,22 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
                       <Eye className="h-4 w-4" />
                     </Link>
                   </td>
+                  <td className="px-4 py-3 w-10 text-center">
+                    <button
+                      onClick={() => handleDelete(call.id)}
+                      disabled={deletingId === call.id}
+                      aria-label={t.admin.deleteCall}
+                      className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-40"
+                    >
+                      {deletingId === call.id
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <Trash2 className="h-4 w-4" />}
+                    </button>
+                  </td>
                 </tr>
               ))}
               {filteredCalls.length === 0 && (
-                <tr><td colSpan={10} className="px-4 py-12 text-center text-slate-400">{t.dashboard.table.noCallsYet}</td></tr>
+                <tr><td colSpan={11} className="px-4 py-12 text-center text-slate-400">{t.dashboard.table.noCallsYet}</td></tr>
               )}
             </tbody>
           </table>
