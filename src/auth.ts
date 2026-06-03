@@ -40,8 +40,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account, trigger, session: updateData }) {
       // Client called useSession().update({ ... }) — merge the new values into the token
       if (trigger === "update" && updateData) {
-        if ("image" in updateData) token.picture = updateData.image ?? null;
-        if ("name"  in updateData) token.name    = updateData.name  ?? token.name;
+        if ("name" in updateData) token.name = updateData.name ?? token.name;
       }
 
       // Initial sign-in
@@ -68,6 +67,9 @@ export const authOptions: NextAuthOptions = {
         } else {
           token.id = user.id;
         }
+        // Drop picture from the token — Google image URLs are long and bloat the cookie.
+        // The layout fetches the image from the DB on each render anyway.
+        delete token.picture;
       }
       return token;
     },
