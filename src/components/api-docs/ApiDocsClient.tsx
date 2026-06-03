@@ -106,9 +106,11 @@ CallSid=CA...`,
 function CodeBlock({ code, lang = "bash" }: { code: string; lang?: string }) {
   void lang;
   return (
-    <pre className="overflow-x-auto rounded-xl bg-slate-900 p-4 text-sm text-slate-100 font-mono leading-relaxed">
-      <code>{code}</code>
-    </pre>
+    <div className="overflow-x-auto rounded-xl bg-slate-900">
+      <pre className="min-w-0 p-4 text-sm text-slate-100 font-mono leading-relaxed">
+        <code>{code}</code>
+      </pre>
+    </div>
   );
 }
 
@@ -131,35 +133,37 @@ function EndpointRow({
       : "bg-emerald-100 text-emerald-700";
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-      <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-100 bg-slate-50">
-        <span className={`rounded-md px-2 py-0.5 text-xs font-bold ${methodCls}`}>
+      <div className="flex flex-wrap items-center gap-2 px-4 py-3 border-b border-slate-100 bg-slate-50 sm:gap-3 sm:px-5">
+        <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-bold ${methodCls}`}>
           {method}
         </span>
-        <code className="text-sm font-mono font-semibold text-slate-800">
+        <code className="min-w-0 break-all text-sm font-mono font-semibold text-slate-800">
           {path}
         </code>
       </div>
-      <div className="px-5 py-4 space-y-3">
+      <div className="px-4 py-4 space-y-3 sm:px-5">
         <p className="text-sm text-slate-600">{description}</p>
         {params && params.length > 0 && (
-          <table className="w-full text-xs border-collapse">
-            <thead>
-              <tr className="text-left text-slate-400">
-                <th className="pb-1.5 pr-4 font-medium">{d.paramHeader}</th>
-                <th className="pb-1.5 pr-4 font-medium">{d.typeHeader}</th>
-                <th className="pb-1.5 font-medium">{d.descHeader}</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {params.map((p) => (
-                <tr key={p.name}>
-                  <td className="py-1.5 pr-4 font-mono text-brand-700">{p.name}</td>
-                  <td className="py-1.5 pr-4 text-slate-500">{p.type}</td>
-                  <td className="py-1.5 text-slate-600">{p.desc}</td>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[320px] text-xs border-collapse">
+              <thead>
+                <tr className="text-left text-slate-400">
+                  <th className="pb-1.5 pr-4 font-medium">{d.paramHeader}</th>
+                  <th className="pb-1.5 pr-4 font-medium">{d.typeHeader}</th>
+                  <th className="pb-1.5 font-medium">{d.descHeader}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {params.map((p) => (
+                  <tr key={p.name}>
+                    <td className="py-1.5 pr-4 font-mono text-brand-700">{p.name}</td>
+                    <td className="py-1.5 pr-4 text-slate-500">{p.type}</td>
+                    <td className="py-1.5 text-slate-600">{p.desc}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>
@@ -447,9 +451,11 @@ function ApiTester({ t }: { t: Dictionary }) {
                 HTTP {response.status}
               </span>
             </div>
-            <pre className="overflow-auto rounded-xl bg-slate-900 p-4 text-xs text-slate-100 font-mono leading-relaxed max-h-96">
-              {JSON.stringify(response.body, null, 2)}
-            </pre>
+            <div className="overflow-auto rounded-xl bg-slate-900 max-h-96">
+              <pre className="min-w-0 p-4 text-xs text-slate-100 font-mono leading-relaxed">
+                {JSON.stringify(response.body, null, 2)}
+              </pre>
+            </div>
           </div>
         )}
       </div>
@@ -823,7 +829,7 @@ export function ApiDocsClient({ t, lang }: Props) {
   const baseUrl = "https://your-domain.com";
 
   return (
-    <main className="mx-auto max-w-5xl px-4 py-6 md:px-6 md:py-10 space-y-8 md:space-y-10">
+    <main className="mx-auto max-w-5xl overflow-x-hidden px-4 py-6 md:px-6 md:py-10 space-y-8 md:space-y-10">
       {/* ── Header ── */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">{d.title}</h1>
