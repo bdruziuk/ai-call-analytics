@@ -106,11 +106,9 @@ CallSid=CA...`,
 function CodeBlock({ code, lang = "bash" }: { code: string; lang?: string }) {
   void lang;
   return (
-    <div className="overflow-x-auto rounded-xl bg-slate-900">
-      <pre className="min-w-0 p-4 text-sm text-slate-100 font-mono leading-relaxed">
-        <code>{code}</code>
-      </pre>
-    </div>
+    <pre className="rounded-xl bg-slate-900 p-4 text-sm text-slate-100 font-mono leading-relaxed whitespace-pre-wrap break-words">
+      <code>{code}</code>
+    </pre>
   );
 }
 
@@ -451,11 +449,9 @@ function ApiTester({ t }: { t: Dictionary }) {
                 HTTP {response.status}
               </span>
             </div>
-            <div className="overflow-auto rounded-xl bg-slate-900 max-h-96">
-              <pre className="min-w-0 p-4 text-xs text-slate-100 font-mono leading-relaxed">
-                {JSON.stringify(response.body, null, 2)}
-              </pre>
-            </div>
+            <pre className="overflow-auto rounded-xl bg-slate-900 p-4 text-xs text-slate-100 font-mono leading-relaxed max-h-96 whitespace-pre-wrap break-words">
+              {JSON.stringify(response.body, null, 2)}
+            </pre>
           </div>
         )}
       </div>
