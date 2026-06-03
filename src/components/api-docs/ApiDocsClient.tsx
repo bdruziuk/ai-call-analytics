@@ -837,13 +837,13 @@ export function ApiDocsClient({ t, lang }: Props) {
       </div>
 
       {/* ── Top-level tab nav ── */}
-      <div className="flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+      <div className="flex flex-col gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 sm:flex-row">
         {([["api", d.tabApi], ["integrations", d.tabIntegrations]] as [Tab, string][]).map(
           ([id, label]) => (
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+              className={`w-full rounded-lg px-4 py-2.5 text-sm font-medium transition-colors sm:flex-1 sm:py-2 ${
                 tab === id
                   ? "bg-white shadow-sm text-slate-900"
                   : "text-slate-500 hover:text-slate-700"
