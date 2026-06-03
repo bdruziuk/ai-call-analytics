@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Eye, Loader2 } from "lucide-react";
+import { Eye, Loader2, X } from "lucide-react";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { useEffect, useRef, useState, useCallback } from "react";
 import type ukDict from "@/dictionaries/uk.json";
@@ -388,8 +388,8 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
                   <span className="truncate pr-4 text-slate-700">{f.name}</span>
                   <div className="flex items-center gap-3 shrink-0">
                     <span className="text-slate-400">{(f.size / 1024 / 1024).toFixed(2)} MB</span>
-                    <button onClick={() => removeFile(i)} className="text-slate-400 hover:text-red-500 transition-colors">
-                      {t.dashboard.uploadSection.remove}
+                    <button onClick={() => removeFile(i)} aria-label={t.dashboard.uploadSection.remove} className="text-slate-400 hover:text-red-500 transition-colors p-1 -m-1 sm:p-0 sm:m-0">
+                      <X className="h-5 w-5 sm:h-4 sm:w-4" />
                     </button>
                   </div>
                 </li>
