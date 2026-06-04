@@ -86,12 +86,5 @@ export const authOptions: NextAuthOptions = {
     signIn: "/auth/signin",
   },
 
-  // trustHost lets NextAuth derive the base URL from the incoming Host /
-  // X-Forwarded-Host header instead of NEXTAUTH_URL.  This is required when
-  // the app is served through a reverse-proxy (Railway) under a custom domain:
-  // without it, Google's callback is built from NEXTAUTH_URL (the Railway
-  // internal domain) while the browser is on the custom domain, breaking OAuth.
-  trustHost: true,
-
   secret: process.env.NEXTAUTH_SECRET,
 };
