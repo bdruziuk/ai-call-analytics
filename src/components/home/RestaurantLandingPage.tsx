@@ -12,7 +12,7 @@ import type ukDict from "@/dictionaries/uk.json";
 type L = typeof ukDict["landing"];
 
 /* ── Design tokens ─────────────────────────────────────────────────────── */
-const BLUE = "#2563EB";
+const BLUE = "#1C78AE";
 const DARK = "#0F172A";
 
 /* ══════════════════════════════════════════════════════════════════════════
