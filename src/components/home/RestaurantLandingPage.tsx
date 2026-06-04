@@ -38,7 +38,7 @@ function DashboardMockup({ l }: { l: L }) {
         className="pointer-events-none absolute -inset-6 rounded-3xl"
         style={{ background: `radial-gradient(ellipse at center, ${BLUE}22 0%, transparent 70%)` }}
       />
-      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-blue-100/60">
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-brand-100/60">
         {/* Chrome */}
         <div className="flex items-center gap-3 border-b border-slate-100 bg-slate-50 px-4 py-3">
           <div className="flex gap-1.5">
@@ -164,7 +164,7 @@ function LeadForm({ l }: { l: L }) {
               value={form[f.id]}
               onChange={(e) => setForm((prev) => ({ ...prev, [f.id]: e.target.value }))}
               placeholder={f.ph}
-              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              className="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-100"
             />
           </div>
         ))}
@@ -175,7 +175,7 @@ function LeadForm({ l }: { l: L }) {
       <button
         type="submit"
         disabled={status === "loading"}
-        className="mt-5 w-full rounded-xl py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-200/60 transition hover:opacity-90 disabled:opacity-60"
+        className="mt-5 w-full rounded-xl py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-200/60 transition hover:opacity-90 disabled:opacity-60"
         style={{ background: BLUE }}
       >
         {status === "loading" ? l.submitting : l.submitBtn}
@@ -207,7 +207,7 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
   ];
 
   const features = [
-    { Icon: Shield,     iconCls: "bg-blue-50 text-blue-600",    title: l.feat1title, desc: l.feat1desc, outcome: l.feat1outcome, badges: [l.feat1badge1, l.feat1badge2] },
+    { Icon: Shield,     iconCls: "bg-brand-50 text-brand-600",    title: l.feat1title, desc: l.feat1desc, outcome: l.feat1outcome, badges: [l.feat1badge1, l.feat1badge2] },
     { Icon: Target,     iconCls: "bg-red-50 text-red-600",      title: l.feat2title, desc: l.feat2desc, outcome: l.feat2outcome, badges: [l.feat2badge1, l.feat2badge2] },
     { Icon: DollarSign, iconCls: "bg-emerald-50 text-emerald-600", title: l.feat3title, desc: l.feat3desc, outcome: l.feat3outcome, badges: [l.feat3badge1, l.feat3badge2] },
     { Icon: Clock,      iconCls: "bg-purple-50 text-purple-600",title: l.feat4title, desc: l.feat4desc, outcome: l.feat4outcome, badges: [l.feat4badge1, l.feat4badge2] },
@@ -250,13 +250,13 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
 
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <a href="#audit"
-              className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-blue-200/60 transition hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-base font-bold text-white shadow-lg shadow-brand-200/60 transition hover:opacity-90"
               style={{ background: BLUE }}>
               {l.cta1}
               <ArrowRight size={18} />
             </a>
             <a href="#how"
-              className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-7 py-3.5 text-base font-semibold text-slate-700 transition hover:border-blue-300 hover:text-blue-700">
+              className="inline-flex items-center gap-2 rounded-xl border-2 border-slate-200 bg-white px-7 py-3.5 text-base font-semibold text-slate-700 transition hover:border-brand-300 hover:text-brand-700">
               {l.cta2}
             </a>
           </div>
@@ -272,13 +272,13 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
       {/* ══ PROBLEM ═══════════════════════════════════════════════════════ */}
       <section className="bg-slate-50 py-20 md:py-28">
         <div className="mx-auto max-w-5xl px-4 md:px-6">
-          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-blue-600">{l.s2label}</p>
+          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-brand-600">{l.s2label}</p>
           <h2 className="mb-4 text-center text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">{l.s2title}</h2>
           <p className="mx-auto mb-12 max-w-xl text-center text-slate-500">{l.s2sub}</p>
 
           <div className="grid gap-5 md:grid-cols-3">
             {problems.map(({ Icon, iconCls, title, impact, stat }) => (
-              <div key={title} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100 transition hover:shadow-md hover:ring-blue-100">
+              <div key={title} className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100 transition hover:shadow-md hover:ring-brand-100">
                 <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl ${iconCls}`}>
                   <Icon size={20} />
                 </div>
@@ -302,7 +302,7 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
       {/* ══ HOW IT WORKS ══════════════════════════════════════════════════ */}
       <section id="how" className="bg-white py-20 md:py-28">
         <div className="mx-auto max-w-5xl px-4 md:px-6">
-          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-blue-600">{l.s3label}</p>
+          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-brand-600">{l.s3label}</p>
           <h2 className="mb-14 text-center text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">{l.s3title}</h2>
 
           <div className="relative grid gap-10 md:grid-cols-4">
@@ -311,7 +311,7 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
             />
             {steps.map(({ Icon, num, title, desc }) => (
               <div key={num} className="relative flex flex-col items-center text-center">
-                <div className="relative z-10 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg shadow-blue-100"
+                <div className="relative z-10 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg shadow-brand-100"
                   style={{ background: `linear-gradient(135deg, ${BLUE} 0%, #1d4ed8 100%)` }}>
                   <Icon size={24} className="text-white" />
                   <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[9px] font-bold shadow"
@@ -328,12 +328,12 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
       {/* ══ BENEFITS ══════════════════════════════════════════════════════ */}
       <section className="bg-slate-50 py-20 md:py-28">
         <div className="mx-auto max-w-5xl px-4 md:px-6">
-          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-blue-600">{l.s4label}</p>
+          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-brand-600">{l.s4label}</p>
           <h2 className="mb-14 text-center text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">{l.s4title}</h2>
 
           <div className="grid gap-6 md:grid-cols-2">
             {features.map(({ Icon, iconCls, title, desc, outcome, badges }) => (
-              <div key={title} className="flex flex-col rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100 transition hover:shadow-md hover:ring-blue-100">
+              <div key={title} className="flex flex-col rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-100 transition hover:shadow-md hover:ring-brand-100">
                 <div className={`mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl ${iconCls}`}>
                   <Icon size={20} />
                 </div>
@@ -357,7 +357,7 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
       {/* ══ DASHBOARD PREVIEW ═════════════════════════════════════════════ */}
       <section style={{ background: DARK }} className="py-20 md:py-28">
         <div className="mx-auto max-w-5xl px-4 md:px-6">
-          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-blue-400">{l.s5label}</p>
+          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-brand-400">{l.s5label}</p>
           <h2 className="mb-4 text-center text-3xl font-extrabold tracking-tight text-white md:text-4xl">{l.s5title}</h2>
           <p className="mx-auto mb-12 max-w-xl text-center text-slate-400">{l.s5sub}</p>
 
@@ -460,7 +460,7 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
       {/* ══ INTEGRATIONS ══════════════════════════════════════════════════ */}
       <section className="bg-white py-20 md:py-28">
         <div className="mx-auto max-w-5xl px-4 md:px-6">
-          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-blue-600">{l.s6label}</p>
+          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-brand-600">{l.s6label}</p>
           <h2 className="mb-4 text-center text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">{l.s6title}</h2>
           <p className="mx-auto mb-12 max-w-lg text-center text-slate-500">{l.s6sub}</p>
 
@@ -491,7 +491,7 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
       {/* ══ ROI ═══════════════════════════════════════════════════════════ */}
       <section className="py-20 md:py-28" style={{ background: `linear-gradient(135deg, ${BLUE} 0%, #1d4ed8 100%)` }}>
         <div className="mx-auto max-w-4xl px-4 md:px-6">
-          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-blue-200">{l.s7label}</p>
+          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-brand-200">{l.s7label}</p>
           <h2 className="mb-12 text-center text-3xl font-extrabold tracking-tight text-white md:text-4xl">{l.s7title}</h2>
 
           <div className="grid gap-6 md:grid-cols-2 md:items-center">
@@ -502,14 +502,14 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
                 { label: l.roi3label, value: l.roi3val },
               ].map(({ label, value }) => (
                 <div key={label} className="flex items-center justify-between rounded-xl px-5 py-4" style={{ background: "rgba(255,255,255,0.12)" }}>
-                  <span className="text-sm text-blue-100">{label}</span>
+                  <span className="text-sm text-brand-100">{label}</span>
                   <span className="text-lg font-bold text-white">{value}</span>
                 </div>
               ))}
               <div className="h-px bg-white/20" />
               <div className="flex items-center justify-between rounded-xl px-5 py-4"
                 style={{ background: "rgba(255,255,255,0.22)", outline: "2px solid rgba(255,255,255,0.30)" }}>
-                <span className="text-sm font-bold text-blue-100">{l.roiTotalLabel}</span>
+                <span className="text-sm font-bold text-brand-100">{l.roiTotalLabel}</span>
                 <span className="text-2xl font-extrabold text-white">{l.roiTotalVal}</span>
               </div>
             </div>
@@ -539,14 +539,14 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
       {/* ══ CASE STUDY ════════════════════════════════════════════════════ */}
       <section className="bg-slate-50 py-20 md:py-28">
         <div className="mx-auto max-w-4xl px-4 md:px-6">
-          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-blue-600">{l.s8label}</p>
+          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-brand-600">{l.s8label}</p>
           <h2 className="mb-12 text-center text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">{l.s8title}</h2>
 
           <div className="grid gap-6 md:grid-cols-2">
             <div className="grid grid-cols-2 gap-4">
               {[
                 { val: l.case1val, label: l.case1label, clr: "text-emerald-600", bg: "bg-emerald-50" },
-                { val: l.case2val, label: l.case2label, clr: "text-blue-600",    bg: "bg-blue-50"    },
+                { val: l.case2val, label: l.case2label, clr: "text-brand-600",    bg: "bg-brand-50"    },
                 { val: l.case3val, label: l.case3label, clr: "text-purple-600",  bg: "bg-purple-50"  },
                 { val: l.case4val, label: l.case4label, clr: "text-amber-600",   bg: "bg-amber-50"   },
               ].map(({ val, label, clr, bg }) => (
@@ -595,7 +595,7 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
       {/* ══ FAQ ═══════════════════════════════════════════════════════════ */}
       <section className="bg-white py-20 md:py-28">
         <div className="mx-auto max-w-2xl px-4 md:px-6">
-          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-blue-600">{l.s9label}</p>
+          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-brand-600">{l.s9label}</p>
           <h2 className="mb-12 text-center text-3xl font-extrabold tracking-tight text-slate-900 md:text-4xl">{l.s9title}</h2>
           <div className="rounded-2xl bg-slate-50 px-6 md:px-8">
             {faqs.map((faq) => <FAQItem key={faq.q} {...faq} />)}
@@ -606,7 +606,7 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
       {/* ══ FINAL CTA ═════════════════════════════════════════════════════ */}
       <section id="audit" style={{ background: DARK }} className="py-20 md:py-28">
         <div className="mx-auto max-w-2xl px-4 md:px-6">
-          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-blue-400">{l.s10label}</p>
+          <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-brand-400">{l.s10label}</p>
           <h2 className="mb-4 text-center text-3xl font-extrabold tracking-tight text-white md:text-4xl">{l.s10title}</h2>
           <p className="mx-auto mb-10 max-w-md text-center text-slate-400">{l.s10sub}</p>
 
@@ -615,9 +615,9 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
           {!isLoggedIn && (
             <p className="mt-8 text-center text-sm text-slate-500">
               {l.haveAccount}{" "}
-              <Link href={`/${lang}/auth/signin`} className="font-semibold text-blue-400 transition-colors hover:text-blue-300">{l.signInLink}</Link>
+              <Link href={`/${lang}/auth/signin`} className="font-semibold text-brand-400 transition-colors hover:text-brand-300">{l.signInLink}</Link>
               {" · "}
-              <Link href={`/${lang}/auth/register`} className="font-semibold text-blue-400 transition-colors hover:text-blue-300">{l.registerLink}</Link>
+              <Link href={`/${lang}/auth/register`} className="font-semibold text-brand-400 transition-colors hover:text-brand-300">{l.registerLink}</Link>
             </p>
           )}
         </div>
