@@ -12,7 +12,8 @@ import type ukDict from "@/dictionaries/uk.json";
 type L = typeof ukDict["landing"];
 
 /* ── Design tokens ─────────────────────────────────────────────────────── */
-const BLUE = "#1C78AE";
+const BLUE      = "#1C78AE"; // brand-600
+const BLUE_DARK = "#104A6D"; // brand-800
 const DARK = "#0F172A";
 
 /* ══════════════════════════════════════════════════════════════════════════
@@ -312,7 +313,7 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
             {steps.map(({ Icon, num, title, desc }) => (
               <div key={num} className="relative flex flex-col items-center text-center">
                 <div className="relative z-10 mb-4 flex h-16 w-16 items-center justify-center rounded-2xl shadow-lg shadow-brand-100"
-                  style={{ background: `linear-gradient(135deg, ${BLUE} 0%, #1d4ed8 100%)` }}>
+                  style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_DARK} 100%)` }}>
                   <Icon size={24} className="text-white" />
                   <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[9px] font-bold shadow"
                     style={{ color: BLUE }}>{num}</span>
@@ -489,7 +490,7 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
       </section>
 
       {/* ══ ROI ═══════════════════════════════════════════════════════════ */}
-      <section className="py-20 md:py-28" style={{ background: `linear-gradient(135deg, ${BLUE} 0%, #1d4ed8 100%)` }}>
+      <section className="py-20 md:py-28" style={{ background: `linear-gradient(135deg, ${BLUE} 0%, ${BLUE_DARK} 100%)` }}>
         <div className="mx-auto max-w-4xl px-4 md:px-6">
           <p className="mb-3 text-center text-sm font-semibold uppercase tracking-widest text-brand-200">{l.s7label}</p>
           <h2 className="mb-12 text-center text-3xl font-extrabold tracking-tight text-white md:text-4xl">{l.s7title}</h2>
