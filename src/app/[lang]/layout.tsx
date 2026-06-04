@@ -7,7 +7,7 @@ import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { notFound } from "next/navigation";
-import { LayoutDashboard, PhoneCall, Users, Shield, Code2, BarChart2 } from "lucide-react";
+import { LayoutDashboard, PhoneCall, Users, Shield, Code2, BarChart2, UtensilsCrossed } from "lucide-react";
 import { db } from "@/lib/db";
 
 type Props = {
@@ -68,6 +68,15 @@ export default async function LangLayout({ children, params }: Props) {
         <div className="flex items-center gap-6">
           <Logo lang={lang} size="sm" />
 
+          {/* Restaurant landing — always visible */}
+          <Link
+            href={`/${lang}/restaurant`}
+            className="hidden items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold text-brand-800 transition-colors hover:bg-brand-400 hover:text-brand-900 md:flex"
+          >
+            <UtensilsCrossed size={16} />
+            {t.nav.restaurant}
+          </Link>
+
           {session?.user && (
             <nav className="hidden md:flex items-center gap-1">
               {navItems.map((item) => (
@@ -109,7 +118,10 @@ export default async function LangLayout({ children, params }: Props) {
 
               {/* Mobile hamburger (hidden on md+) */}
               <div className="md:hidden">
-                <MobileNav items={navItems} />
+                <MobileNav items={[
+                  { href: `/${lang}/restaurant`, label: t.nav.restaurant, icon: <UtensilsCrossed size={18} /> },
+                  ...navItems,
+                ]} />
               </div>
             </>
           ) : (
@@ -126,6 +138,12 @@ export default async function LangLayout({ children, params }: Props) {
               >
                 {t.auth.register}
               </Link>
+              {/* Mobile: restaurant link for logged-out users */}
+              <div className="md:hidden">
+                <MobileNav items={[
+                  { href: `/${lang}/restaurant`, label: t.nav.restaurant, icon: <UtensilsCrossed size={18} /> },
+                ]} />
+              </div>
             </div>
           )}
         </div>
