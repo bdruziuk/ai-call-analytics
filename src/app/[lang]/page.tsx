@@ -10,12 +10,12 @@ export default async function HomePage({ params }: Props) {
   const { lang } = await params;
   if (!hasLocale(lang)) notFound();
 
-  const [, session] = await Promise.all([
+  const [t, session] = await Promise.all([
     getDictionary(lang),
     getServerSession(authOptions),
   ]);
 
   const isLoggedIn = !!session?.user;
 
-  return <RestaurantLandingPage lang={lang} isLoggedIn={isLoggedIn} />;
+  return <RestaurantLandingPage lang={lang} isLoggedIn={isLoggedIn} t={t} />;
 }
