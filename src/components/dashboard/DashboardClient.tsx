@@ -4,6 +4,9 @@ import Link from "next/link";
 import { Eye, Loader2, Trash2, X } from "lucide-react";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { OwnerDashboard } from "@/components/dashboard/analytics/OwnerDashboard";
+import { MarketerDashboard } from "@/components/dashboard/analytics/MarketerDashboard";
+import { MOCK_OWNER, MOCK_MARKETER } from "@/lib/mock-dashboard-analytics";
 import type ukDict from "@/dictionaries/uk.json";
 
 type Dictionary = typeof ukDict;
@@ -140,6 +143,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
   const [sortKey, setSortKey] = useState<SortKey>("createdAt");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"calls" | "owner" | "marketer">("calls");
   const fileInputRef  = useRef<HTMLInputElement>(null);
   const sentinelRef   = useRef<HTMLDivElement>(null);
 
@@ -349,6 +353,40 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
         <h1 className="text-2xl font-bold text-slate-900 md:text-3xl">{t.dashboard.title}</h1>
         <p className="mt-1 text-sm text-slate-500">{t.dashboard.subtitle}</p>
       </div>
+
+      {/* ── Tab nav ── */}
+      <div className="mb-6 flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 md:mb-8">
+        {([
+          { id: "calls"    as const, label: "📞 Дзвінки"           },
+          { id: "owner"    as const, label: "👔 Власник / Директор" },
+          { id: "marketer" as const, label: "📣 Маркетолог"         },
+        ]).map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors sm:text-sm ${
+              activeTab === id
+                ? "bg-white shadow-sm text-slate-900"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Owner dashboard ── */}
+      {activeTab === "owner" && (
+        <OwnerDashboard data={MOCK_OWNER} lang={lang} />
+      )}
+
+      {/* ── Marketer dashboard ── */}
+      {activeTab === "marketer" && (
+        <MarketerDashboard data={MOCK_MARKETER} />
+      )}
+
+      {/* ── Calls tab (existing functionality) ── */}
+      {activeTab === "calls" && <>
 
       {/* Upload section */}
       <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:mb-8 md:p-6">
@@ -643,6 +681,8 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
           </div>
         </div>
       </section>
+      </> /* end activeTab === "calls" */}
+
     </main>
   );
 }
