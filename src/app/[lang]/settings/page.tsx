@@ -31,7 +31,17 @@ export default async function SettingsPage({ params, searchParams }: Props) {
     getOrCreateSubscription(session.user.id),
     db.user.findUnique({
       where:  { id: session.user.id },
-      select: { name: true, image: true, isTestAccount: true },
+      select: {
+        name: true,
+        image: true,
+        isTestAccount: true,
+        analyticsConsentAccepted:      true,
+        analyticsConsentAcceptedAt:    true,
+        analyticsConsentVersion:       true,
+        marketingDemoConsentAccepted:  true,
+        marketingDemoConsentAcceptedAt: true,
+        marketingDemoConsentVersion:   true,
+      },
     }),
   ]);
 
@@ -68,6 +78,14 @@ export default async function SettingsPage({ params, searchParams }: Props) {
       }}
       paymentStatus={paymentStatus}
       isTestAccount={!!dbUser?.isTestAccount}
+      consent={{
+        analyticsAccepted:      !!dbUser?.analyticsConsentAccepted,
+        analyticsAcceptedAt:    dbUser?.analyticsConsentAcceptedAt?.toISOString() ?? null,
+        analyticsVersion:       dbUser?.analyticsConsentVersion ?? null,
+        marketingAccepted:      !!dbUser?.marketingDemoConsentAccepted,
+        marketingAcceptedAt:    dbUser?.marketingDemoConsentAcceptedAt?.toISOString() ?? null,
+        marketingVersion:       dbUser?.marketingDemoConsentVersion ?? null,
+      }}
     />
   );
 }

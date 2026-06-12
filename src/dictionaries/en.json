@@ -242,7 +242,11 @@
       "passwordMismatch": "Passwords do not match",
       "generic": "Something went wrong"
     },
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "consentAnalyticsLabel": "I agree to the terms of data usage for analytics and call recording processing.",
+    "consentAnalyticsError": "Please accept the data processing consent.",
+    "consentMarketingLabel": "I allow anonymized and de-identified analysis results to be used for service demonstrations, presentations, and marketing case studies.",
+    "consentViewDoc": "View document"
   },
   "callLanguage": {
     "label": "Language",
@@ -769,5 +773,19 @@
     "footerLogin": "Login",
     "footerSignup": "Sign up",
     "footerApi": "API"
+  },
+  "consent": {
+    "documentsTitle": "Documents and Consents",
+    "analyticsConsentTitle": "Required Analytics Consent",
+    "marketingConsentTitle": "Marketing / Demo Consent",
+    "statusAccepted": "Accepted",
+    "statusNotAccepted": "Not accepted",
+    "acceptedAt": "Accepted on",
+    "version": "Version",
+    "notYetAccepted": "Consent has not been accepted yet.",
+    "legalDocuments": "Legal Documents",
+    "docLinkUk": "Українська",
+    "docLinkEn": "English",
+    "docLinkRu": "Русский"
   }
 }

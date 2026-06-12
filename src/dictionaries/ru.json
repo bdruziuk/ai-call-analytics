@@ -242,7 +242,11 @@
       "passwordMismatch": "Пароли не совпадают",
       "generic": "Что-то пошло не так"
     },
-    "cancel": "Отмена"
+    "cancel": "Отмена",
+    "consentAnalyticsLabel": "Я соглашаюсь с условиями использования данных для аналитики и обработки записей звонков.",
+    "consentAnalyticsError": "Пожалуйста, подтвердите согласие на обработку данных.",
+    "consentMarketingLabel": "Разрешаю использовать анонимизированные и обезличенные результаты анализа для демонстрации возможностей сервиса, презентаций и маркетинговых кейсов.",
+    "consentViewDoc": "Просмотреть документ"
   },
   "callLanguage": {
     "label": "Язык",
@@ -769,5 +773,19 @@
     "footerLogin": "Войти",
     "footerSignup": "Регистрация",
     "footerApi": "API"
+  },
+  "consent": {
+    "documentsTitle": "Документы и согласия",
+    "analyticsConsentTitle": "Обязательное согласие на аналитику",
+    "marketingConsentTitle": "Маркетинговое / демо-согласие",
+    "statusAccepted": "Принято",
+    "statusNotAccepted": "Не принято",
+    "acceptedAt": "Дата принятия",
+    "version": "Версия",
+    "notYetAccepted": "Согласие ещё не принято.",
+    "legalDocuments": "Юридические документы",
+    "docLinkUk": "Українська",
+    "docLinkEn": "English",
+    "docLinkRu": "Русский"
   }
 }

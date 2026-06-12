@@ -14,21 +14,30 @@ type Props = {
 };
 
 export function RegisterForm({ t, lang }: Props) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [name, setName]                           = useState("");
+  const [email, setEmail]                         = useState("");
+  const [password, setPassword]                   = useState("");
+  const [analyticsConsent, setAnalyticsConsent]   = useState(false);
+  const [marketingConsent, setMarketingConsent]   = useState(false);
+  const [error, setError]                         = useState<string | null>(null);
+  const [loading, setLoading]                     = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    // Client-side: required consent gate
+    if (!analyticsConsent) {
+      setError(t.auth.consentAnalyticsError);
+      return;
+    }
+
     setLoading(true);
 
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({ name, email, password, analyticsConsent, marketingConsent }),
     });
 
     if (!res.ok) {
@@ -38,6 +47,8 @@ export function RegisterForm({ t, lang }: Props) {
         setError(t.auth.errors.emailTaken);
       } else if (data.error === "PASSWORD_TOO_SHORT") {
         setError(t.auth.errors.passwordTooShort);
+      } else if (data.error === "CONSENT_REQUIRED") {
+        setError(t.auth.consentAnalyticsError);
       } else {
         setError(t.auth.errors.generic);
       }
@@ -109,6 +120,53 @@ export function RegisterForm({ t, lang }: Props) {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
             />
+          </div>
+
+          {/* ── Consent checkboxes ── */}
+          <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+
+            {/* Required analytics consent */}
+            <div>
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={analyticsConsent}
+                  onChange={(e) => setAnalyticsConsent(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-brand-600"
+                  aria-required="true"
+                />
+                <span className="text-xs leading-relaxed text-slate-700">
+                  <span className="font-semibold text-red-500 mr-1">*</span>
+                  {t.auth.consentAnalyticsLabel}
+                </span>
+              </label>
+              <div className="mt-1.5 ml-7">
+                <Link
+                  href={`/${lang}/legal/data-consent`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-medium text-brand-600 hover:text-brand-700 hover:underline"
+                >
+                  {t.auth.consentViewDoc} →
+                </Link>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="h-px bg-slate-200" />
+
+            {/* Optional marketing consent */}
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={marketingConsent}
+                onChange={(e) => setMarketingConsent(e.target.checked)}
+                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-brand-600"
+              />
+              <span className="text-xs leading-relaxed text-slate-600">
+                {t.auth.consentMarketingLabel}
+              </span>
+            </label>
           </div>
 
           {error && (

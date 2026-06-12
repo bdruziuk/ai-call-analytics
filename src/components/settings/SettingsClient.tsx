@@ -19,6 +19,15 @@ type SubscriptionInfo = {
   hasStripeSubscription: boolean;
 };
 
+type ConsentInfo = {
+  analyticsAccepted: boolean;
+  analyticsAcceptedAt: string | null;
+  analyticsVersion: string | null;
+  marketingAccepted: boolean;
+  marketingAcceptedAt: string | null;
+  marketingVersion: string | null;
+};
+
 type Props = {
   t: Dictionary;
   lang: string;
@@ -31,6 +40,7 @@ type Props = {
   subscription: SubscriptionInfo;
   paymentStatus?: "success" | "cancelled" | null;
   isTestAccount?: boolean;
+  consent?: ConsentInfo;
 };
 
 const languages = [
@@ -39,7 +49,7 @@ const languages = [
   { code: "ru", label: "Русский", flag: "🇷🇺" },
 ];
 
-export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentStatus, isTestAccount = false }: Props) {
+export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentStatus, isTestAccount = false, consent }: Props) {
   const router                      = useRouter();
   const [name, setName]             = useState(user.name ?? "");
   const [image, setImage]           = useState(user.image ?? "");
@@ -316,6 +326,73 @@ export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentSt
         initialKeys={apiKeys}
         locked={!isTestAccount && !["growth", "pro"].includes(subscription.planId)}
       />
+
+      {/* ── Consent card ──────────────────────────────────────────────── */}
+      {consent && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-5 text-base font-bold text-slate-900">{t.consent.documentsTitle}</h2>
+
+          <div className="space-y-4">
+            {/* Required analytics consent */}
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-slate-800">{t.consent.analyticsConsentTitle}</p>
+                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${consent.analyticsAccepted ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-600"}`}>
+                  {consent.analyticsAccepted ? t.consent.statusAccepted : t.consent.statusNotAccepted}
+                </span>
+              </div>
+              {consent.analyticsAccepted ? (
+                <div className="space-y-1 text-xs text-slate-500">
+                  {consent.analyticsAcceptedAt && (
+                    <p>{t.consent.acceptedAt}: <span className="font-medium text-slate-700">{new Date(consent.analyticsAcceptedAt).toLocaleDateString(lang === "uk" ? "uk-UA" : lang === "ru" ? "ru-RU" : "en-GB")}</span></p>
+                  )}
+                  {consent.analyticsVersion && (
+                    <p>{t.consent.version}: <span className="font-medium text-slate-700">{consent.analyticsVersion}</span></p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500">{t.consent.notYetAccepted}</p>
+              )}
+            </div>
+
+            {/* Optional marketing consent */}
+            <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-slate-800">{t.consent.marketingConsentTitle}</p>
+                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${consent.marketingAccepted ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+                  {consent.marketingAccepted ? t.consent.statusAccepted : t.consent.statusNotAccepted}
+                </span>
+              </div>
+              {consent.marketingAccepted && (
+                <div className="space-y-1 text-xs text-slate-500">
+                  {consent.marketingAcceptedAt && (
+                    <p>{t.consent.acceptedAt}: <span className="font-medium text-slate-700">{new Date(consent.marketingAcceptedAt).toLocaleDateString(lang === "uk" ? "uk-UA" : lang === "ru" ? "ru-RU" : "en-GB")}</span></p>
+                  )}
+                  {consent.marketingVersion && (
+                    <p>{t.consent.version}: <span className="font-medium text-slate-700">{consent.marketingVersion}</span></p>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Legal document links */}
+          <div className="mt-5 border-t border-slate-100 pt-4">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-400">{t.consent.legalDocuments}</p>
+            <div className="flex flex-wrap gap-2">
+              <a href="/uk/legal/data-consent" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-brand-700">
+                {t.consent.docLinkUk}
+              </a>
+              <a href="/en/legal/data-consent" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-brand-700">
+                {t.consent.docLinkEn}
+              </a>
+              <a href="/ru/legal/data-consent" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-brand-700">
+                {t.consent.docLinkRu}
+              </a>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── Sign-out card ──────────────────────────────────────────────── */}
       <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">

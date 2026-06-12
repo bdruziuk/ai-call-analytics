@@ -14,6 +14,17 @@ model User {
   image         String?
   googleId      String?        @unique
   isTestAccount Boolean        @default(false)
+
+  // Data-processing consent (required at registration)
+  analyticsConsentAccepted   Boolean   @default(false)
+  analyticsConsentAcceptedAt DateTime?
+  analyticsConsentVersion    String?
+
+  // Marketing / demo consent (optional)
+  marketingDemoConsentAccepted   Boolean   @default(false)
+  marketingDemoConsentAcceptedAt DateTime?
+  marketingDemoConsentVersion    String?
+
   calls         Call[]
   salesProfiles SalesProfile[]
   apiKeys       ApiKey[]
