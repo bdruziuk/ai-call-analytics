@@ -8,6 +8,7 @@ import { ProfileAvatar } from "@/components/ProfileAvatar";
 import type ukDict from "@/dictionaries/uk.json";
 import { ApiKeySection, type ApiKeyRecord } from "@/components/settings/ApiKeySection";
 import { PlanSection } from "@/components/settings/PlanSection";
+import { IntegrationSetupSection } from "@/components/settings/IntegrationSetupSection";
 
 type Dictionary = typeof ukDict;
 
@@ -326,6 +327,9 @@ export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentSt
         initialKeys={apiKeys}
         locked={!isTestAccount && !["growth", "pro"].includes(subscription.planId)}
       />
+
+      {/* ── Integration Setup card ─────────────────────────────────────── */}
+      <IntegrationSetupSection apiKeys={apiKeys} />
 
       {/* ── Consent card ──────────────────────────────────────────────── */}
       {consent && (
