@@ -246,7 +246,11 @@
     "consentAnalyticsLabel": "I agree to the terms of data usage for analytics and call recording processing.",
     "consentAnalyticsError": "Please accept the data processing consent.",
     "consentMarketingLabel": "I allow anonymized and de-identified analysis results to be used for service demonstrations, presentations, and marketing case studies.",
-    "consentViewDoc": "View document"
+    "consentViewDoc": "View document",
+    "promoCode": "Promo code",
+    "promoCodePlaceholder": "Enter promo code (optional)",
+    "promoCodeApplied": "Promo code applied! Plan: {plan}",
+    "promoCodeInvalid": "Promo code is invalid or has already been used."
   },
   "callLanguage": {
     "label": "Language",

@@ -74,6 +74,16 @@ model SalesProfile {
   updatedAt   DateTime @updatedAt
 }
 
+model PromoCode {
+  id        String    @id @default(cuid())
+  code      String    @unique
+  planId    String                       // plan granted when code is redeemed
+  createdBy String                       // admin email who generated it
+  usedBy    String?                      // userId that redeemed it (null = available)
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+}
+
 model PasswordResetToken {
   id        String   @id @default(cuid())
   email     String

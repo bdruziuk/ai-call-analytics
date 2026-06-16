@@ -40,7 +40,8 @@ export default async function AdminPage({ params }: Props) {
     );
   }
 
-  const users = await db.user.findMany({
+  const [users, rawPromos] = await Promise.all([
+    db.user.findMany({
     include: {
       salesProfiles: {
         include: {
@@ -53,7 +54,15 @@ export default async function AdminPage({ params }: Props) {
       _count: { select: { calls: true, salesProfiles: true } },
     },
     orderBy: { createdAt: "desc" },
-  });
+    }),
+    db.promoCode.findMany({ orderBy: { createdAt: "desc" } }),
+  ]);
+
+  const promoCodes = rawPromos.map((p) => ({
+    ...p,
+    createdAt: p.createdAt.toISOString(),
+    usedAt:    p.usedAt?.toISOString() ?? null,
+  }));
 
   // Serialise Date → string so client components receive plain JSON
   const serialised = users.map((u: typeof users[number]) => ({
@@ -81,7 +90,7 @@ export default async function AdminPage({ params }: Props) {
 
   return (
     <main className="min-h-[calc(100vh-56px)] bg-slate-50">
-      <AdminPanel t={t} lang={lang} initialUsers={serialised} />
+      <AdminPanel t={t} lang={lang} initialUsers={serialised} initialPromoCodes={promoCodes} />
     </main>
   );
 }

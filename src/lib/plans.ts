@@ -86,6 +86,14 @@ export const PLANS: Record<PlanId, Plan> = {
 
 export const PLAN_ORDER: PlanId[] = ["free", "starter", "growth", "pro"];
 
+/** Shared display metadata for admin / settings UI */
+export const PLAN_META_ADMIN: Record<PlanId, { label: string; bg: string; text: string }> = {
+  free:    { label: "Free",    bg: "#f1f5f9", text: "#64748b" },
+  starter: { label: "Starter", bg: "#dbeafe", text: "#1e40af" },
+  growth:  { label: "Growth",  bg: "#e0f2fe", text: "#1C78AE" },
+  pro:     { label: "Pro",     bg: "#0B344E", text: "#ffffff" },
+};
+
 export function getPlan(planId: string): Plan {
   return PLANS[planId as PlanId] ?? PLANS.free;
 }

@@ -19,6 +19,8 @@ export function RegisterForm({ t, lang }: Props) {
   const [password, setPassword]                   = useState("");
   const [analyticsConsent, setAnalyticsConsent]   = useState(false);
   const [marketingConsent, setMarketingConsent]   = useState(false);
+  const [promoCode,        setPromoCode]          = useState("");
+  const [promoApplied,     setPromoApplied]       = useState<string | null>(null); // plan name after success
   const [error, setError]                         = useState<string | null>(null);
   const [loading, setLoading]                     = useState(false);
 
@@ -37,7 +39,7 @@ export function RegisterForm({ t, lang }: Props) {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, email, password, analyticsConsent, marketingConsent }),
+      body: JSON.stringify({ name, email, password, analyticsConsent, marketingConsent, promoCode }),
     });
 
     if (!res.ok) {
@@ -49,10 +51,18 @@ export function RegisterForm({ t, lang }: Props) {
         setError(t.auth.errors.passwordTooShort);
       } else if (data.error === "CONSENT_REQUIRED") {
         setError(t.auth.consentAnalyticsError);
+      } else if (data.error === "PROMO_INVALID" || data.error === "PROMO_USED") {
+        setError(t.auth.promoCodeInvalid);
       } else {
         setError(t.auth.errors.generic);
       }
       return;
+    }
+
+    // Show promo plan applied if a code was redeemed
+    const data = await res.json().catch(() => null);
+    if (data?.planApplied) {
+      setPromoApplied(data.planApplied as string);
     }
 
     const result = await signIn("credentials", {
@@ -120,6 +130,27 @@ export function RegisterForm({ t, lang }: Props) {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-lg border border-slate-200 px-4 py-2.5 text-sm text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
             />
+          </div>
+
+          {/* ── Promo code ── */}
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-slate-700">
+              {t.auth.promoCode}
+            </label>
+            <input
+              type="text"
+              value={promoCode}
+              onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoApplied(null); }}
+              placeholder={t.auth.promoCodePlaceholder}
+              spellCheck={false}
+              className="w-full rounded-lg border border-slate-200 px-4 py-2.5 font-mono text-sm uppercase tracking-widest text-slate-900 placeholder-slate-400 placeholder:normal-case placeholder:tracking-normal focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+            />
+            {promoApplied && (
+              <p className="mt-1.5 flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+                <span>✓</span>
+                {t.auth.promoCodeApplied.replace("{plan}", promoApplied.toUpperCase())}
+              </p>
+            )}
           </div>
 
           {/* ── Consent checkboxes ── */}

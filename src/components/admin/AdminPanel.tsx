@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type ukDict from "@/dictionaries/uk.json";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
+import { PromoCodesSection, type PromoCodeRecord } from "@/components/admin/PromoCodesSection";
 
 type Dictionary = typeof ukDict;
 
@@ -64,6 +65,7 @@ type Props = {
   t: Dictionary;
   lang: string;
   initialUsers: UserRecord[];
+  initialPromoCodes: PromoCodeRecord[];
 };
 
 /* ── Helpers ──────────────────────────────────────────────────────────────── */
@@ -863,7 +865,7 @@ function CreateAccountModal({
 
 /* ── Main admin panel ─────────────────────────────────────────────────────── */
 
-export function AdminPanel({ t, initialUsers }: Props) {
+export function AdminPanel({ t, initialUsers, initialPromoCodes }: Props) {
   const router = useRouter();
   const locale = t.dateLocale;
 
@@ -1047,6 +1049,9 @@ export function AdminPanel({ t, initialUsers }: Props) {
       {hasInProgress && (
         <ProcessingQueue users={users} t={t} locale={locale} />
       )}
+
+      {/* ── Promo Codes section ── */}
+      <PromoCodesSection initialCodes={initialPromoCodes} />
 
       {/* ── Search + filter row ── */}
       <div className="flex items-center gap-3">
