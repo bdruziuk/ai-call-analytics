@@ -21,7 +21,28 @@ export default async function SettingsPage({ params, searchParams }: Props) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect(`/${lang}/auth/signin`);
 
-  const [t, rawKeys, sub, dbUser] = await Promise.all([
+  // Fetch the user record first — if the session userId is stale (e.g. after
+  // a DB reset in dev) the user won't exist and downstream FK-constrained
+  // queries (like subscription.create) would blow up with a P2003 error.
+  const dbUser = await db.user.findUnique({
+    where:  { id: session.user.id },
+    select: {
+      name:                          true,
+      image:                         true,
+      isTestAccount:                 true,
+      analyticsConsentAccepted:      true,
+      analyticsConsentAcceptedAt:    true,
+      analyticsConsentVersion:       true,
+      marketingDemoConsentAccepted:  true,
+      marketingDemoConsentAcceptedAt: true,
+      marketingDemoConsentVersion:   true,
+    },
+  });
+
+  // Stale session — user no longer in DB
+  if (!dbUser) redirect(`/${lang}/auth/signin`);
+
+  const [t, rawKeys, sub] = await Promise.all([
     getDictionary(lang),
     db.apiKey.findMany({
       where:   { userId: session.user.id },
@@ -29,20 +50,6 @@ export default async function SettingsPage({ params, searchParams }: Props) {
       orderBy: { createdAt: "desc" },
     }),
     getOrCreateSubscription(session.user.id),
-    db.user.findUnique({
-      where:  { id: session.user.id },
-      select: {
-        name: true,
-        image: true,
-        isTestAccount: true,
-        analyticsConsentAccepted:      true,
-        analyticsConsentAcceptedAt:    true,
-        analyticsConsentVersion:       true,
-        marketingDemoConsentAccepted:  true,
-        marketingDemoConsentAcceptedAt: true,
-        marketingDemoConsentVersion:   true,
-      },
-    }),
   ]);
 
   type KeyRow = typeof rawKeys[number];
@@ -64,27 +71,27 @@ export default async function SettingsPage({ params, searchParams }: Props) {
       t={t}
       lang={lang}
       user={{
-        name:  dbUser?.name  ?? session.user.name  ?? null,
+        name:  dbUser.name  ?? session.user.name  ?? null,
         email: session.user.email ?? null,
-        image: dbUser?.image ?? session.user.image ?? null,
+        image: dbUser.image ?? session.user.image ?? null,
       }}
       apiKeys={apiKeys}
       subscription={{
-        planId:               sub.planId,
-        minutesUsed:          sub.minutesUsed,
-        minutesLimit:         plan.minutesPerMonth,
-        currentPeriodEnd:     sub.currentPeriodEnd.toISOString(),
+        planId:                sub.planId,
+        minutesUsed:           sub.minutesUsed,
+        minutesLimit:          plan.minutesPerMonth,
+        currentPeriodEnd:      sub.currentPeriodEnd.toISOString(),
         hasStripeSubscription: !!sub.stripeSubscriptionId,
       }}
       paymentStatus={paymentStatus}
-      isTestAccount={!!dbUser?.isTestAccount}
+      isTestAccount={!!dbUser.isTestAccount}
       consent={{
-        analyticsAccepted:      !!dbUser?.analyticsConsentAccepted,
-        analyticsAcceptedAt:    dbUser?.analyticsConsentAcceptedAt?.toISOString() ?? null,
-        analyticsVersion:       dbUser?.analyticsConsentVersion ?? null,
-        marketingAccepted:      !!dbUser?.marketingDemoConsentAccepted,
-        marketingAcceptedAt:    dbUser?.marketingDemoConsentAcceptedAt?.toISOString() ?? null,
-        marketingVersion:       dbUser?.marketingDemoConsentVersion ?? null,
+        analyticsAccepted:   !!dbUser.analyticsConsentAccepted,
+        analyticsAcceptedAt: dbUser.analyticsConsentAcceptedAt?.toISOString() ?? null,
+        analyticsVersion:    dbUser.analyticsConsentVersion ?? null,
+        marketingAccepted:   !!dbUser.marketingDemoConsentAccepted,
+        marketingAcceptedAt: dbUser.marketingDemoConsentAcceptedAt?.toISOString() ?? null,
+        marketingVersion:    dbUser.marketingDemoConsentVersion ?? null,
       }}
     />
   );

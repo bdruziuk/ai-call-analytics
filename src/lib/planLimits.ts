@@ -17,6 +17,33 @@ export async function getOrCreateSubscription(userId: string) {
   let sub = await db.subscription.findUnique({ where: { userId } });
 
   if (!sub) {
+    // Guard against stale sessions: verify the user row exists before
+    // attempting an FK-constrained insert (avoids P2003 crashes).
+    const userExists = await db.user.findUnique({
+      where:  { id: userId },
+      select: { id: true },
+    });
+
+    if (!userExists) {
+      // Return an in-memory free-plan stub; the caller's page should
+      // redirect the user to sign-in once it detects the missing user.
+      const now = new Date();
+      return {
+        id: "",
+        userId,
+        planId: "free",
+        status: "active",
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+        stripePriceId: null,
+        currentPeriodStart: startOfMonth(now),
+        currentPeriodEnd: endOfMonth(now),
+        minutesUsed: 0,
+        createdAt: now,
+        updatedAt: now,
+      };
+    }
+
     const now = new Date();
     sub = await db.subscription.create({
       data: {
