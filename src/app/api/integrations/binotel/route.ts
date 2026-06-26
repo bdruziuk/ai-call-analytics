@@ -39,25 +39,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ skipped: true, reason: `call disposition is ${disposition}` });
   }
 
-  // apiCallCompleted fires immediately when the call ends — recording may still be uploading.
-  // Binotel sends a separate apiCallRecordCompleted event once the file is ready.
-  // Skip the first event; handle the second one below.
-  if (requestType === "apiCallCompleted" && recordingStatus === "uploading") {
-    logApiRequest(auth.userId, "binotel", "skipped", 200);
-    return NextResponse.json({ skipped: true, reason: "waiting for apiCallRecordCompleted" });
+  // Binotel retries apiCallCompleted until recordingStatus changes from "uploading" to "uploaded".
+  // Return 503 while uploading so Binotel keeps retrying.
+  if (recordingStatus === "uploading") {
+    logApiRequest(auth.userId, "binotel", "skipped", 503);
+    return NextResponse.json({ error: "recording still uploading, please retry" }, { status: 503 });
   }
 
-  // Extract recording URL — apiCallRecordCompleted should include a direct file link
+  // Once recordingStatus=uploaded, use the generateFile portal link to download the MP3.
   const recordingUrl = String(
     body["callDetails[file]"] ??
     body["callDetails[record_url]"] ??
     body["callDetails[recording_url]"] ??
     body["callDetails[generatedFileLink]"] ??
     body["callDetails[fileLink]"] ??
+    body["callDetails[linkToCallRecordInMyBusiness]"] ??
     body.file ?? body.file_url ?? body.record_url ?? body.recording_url ?? ""
   );
 
-  console.log("[binotel] requestType:", requestType, "recordingStatus:", recordingStatus, "recordingUrl:", recordingUrl, "body:", JSON.stringify(body));
+  console.log("[binotel] requestType:", requestType, "recordingStatus:", recordingStatus, "recordingUrl:", recordingUrl);
 
   if (!recordingUrl) {
     logApiRequest(auth.userId, "binotel", "no_recording", 400);
