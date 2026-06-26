@@ -27,6 +27,7 @@ type Stats = {
   totalMinutes: number;
   activeNow: number;
   callsToday: number;
+  totalApiCalls: number;
 };
 
 type DayPoint = { hour: number; label: string; count: number; api: number };
@@ -273,12 +274,13 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
       </div>
 
       {/* ── Stats strip ── */}
-      <div className="grid grid-cols-5 gap-2 px-3 py-2 shrink-0">
+      <div className="grid grid-cols-6 gap-2 px-3 py-2 shrink-0">
         {[
           { label: "Accounts",   value: stats?.totalUsers ?? "—",                             accent: "" },
           { label: "Total Calls",value: stats?.totalCalls ?? "—",                             accent: "" },
           { label: "Minutes",    value: stats ? stats.totalMinutes.toLocaleString() : "—",    accent: "" },
           { label: "Today",      value: stats?.callsToday ?? "—",                             accent: "text-brand-600" },
+          { label: "API Calls",  value: stats?.totalApiCalls ?? "—",                           accent: "text-amber-600" },
           { label: "Processing", value: stats?.activeNow ?? "—",                              accent: stats && stats.activeNow > 0 ? "text-amber-600" : "" },
         ].map(({ label, value, accent }) => (
           <div key={label} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm">

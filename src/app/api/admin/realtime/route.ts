@@ -38,7 +38,7 @@ export async function GET(request: Request) {
           const todayStart = new Date();
           todayStart.setHours(0, 0, 0, 0);
 
-          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday, callsTodayRaw, apiLogs, apiTodayRaw] =
+          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday, totalApiCalls, callsTodayRaw, apiLogs, apiTodayRaw] =
             await Promise.all([
               db.call.findMany({
                 orderBy: { createdAt: "desc" },
@@ -62,6 +62,7 @@ export async function GET(request: Request) {
                 where: { status: { in: ["queued", "transcribing", "analyzing"] } },
               }),
               db.call.count({ where: { createdAt: { gte: todayStart } } }),
+              db.apiLog.count(),
               // Today's calls for hourly chart
               db.call.findMany({
                 where: { createdAt: { gte: todayStart } },
@@ -125,6 +126,7 @@ export async function GET(request: Request) {
               totalMinutes: minutesAgg._sum.minutesUsed ?? 0,
               activeNow,
               callsToday,
+              totalApiCalls,
             },
             callsPerDay,
             apiLogs: apiLogs.map((l) => ({
