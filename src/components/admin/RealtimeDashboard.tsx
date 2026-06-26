@@ -30,7 +30,8 @@ type Stats = {
   totalApiCalls: number;
 };
 
-type DayPoint = { hour: number; label: string; count: number; api: number };
+type DayPoint  = { hour: number; label: string; count: number; api: number };
+type TodayTimestamps = { calls: string[]; api: string[] };
 
 type ApiLogEntry = {
   id: string;
@@ -185,9 +186,9 @@ function Panel({ title, sub, right, children, className = "" }: {
 
 /* ── Main component ── */
 export function RealtimeDashboard({ lang }: { lang: string }) {
-  const [calls, setCalls]             = useState<CallEntry[]>([]);
-  const [stats, setStats]             = useState<Stats | null>(null);
-  const [callsPerDay, setCallsPerDay] = useState<DayPoint[]>([]);
+  const [calls, setCalls]                   = useState<CallEntry[]>([]);
+  const [stats, setStats]                   = useState<Stats | null>(null);
+  const [todayTimestamps, setTodayTimestamps] = useState<TodayTimestamps>({ calls: [], api: [] });
   const [apiLogs, setApiLogs]         = useState<ApiLogEntry[]>([]);
   const [callsPage, setCallsPage]     = useState(1);
   const [apiPage, setApiPage]         = useState(1);
@@ -207,8 +208,8 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
     function connect() {
       es = new EventSource("/api/admin/realtime");
       es.onmessage = (e) => {
-        const { calls: incoming, stats: s, callsPerDay: cpd, apiLogs: al } = JSON.parse(e.data) as {
-          calls: CallEntry[]; stats: Stats; callsPerDay: DayPoint[]; apiLogs: ApiLogEntry[];
+        const { calls: incoming, stats: s, todayTimestamps: tt, apiLogs: al } = JSON.parse(e.data) as {
+          calls: CallEntry[]; stats: Stats; todayTimestamps: TodayTimestamps; apiLogs: ApiLogEntry[];
         };
         const incomingIds = new Set(incoming.map((c) => c.id));
         const fresh = new Set<string>();
@@ -220,7 +221,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
         }
         setCalls(incoming);
         setStats(s);
-        if (cpd) setCallsPerDay(cpd);
+        if (tt) setTodayTimestamps(tt);
         if (al) {
           setApiLogs(al);
           setApiPage((p) => (p > Math.ceil(al.length / PAGE_SIZE) ? 1 : p));
@@ -238,8 +239,30 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
   const secAgo     = lastUpdate ? Math.round((Date.now() - lastUpdate.getTime()) / 1000) : null;
   const callsSlice = calls.slice((callsPage - 1) * PAGE_SIZE, callsPage * PAGE_SIZE);
   const apiSlice   = apiLogs.slice((apiPage - 1) * PAGE_SIZE, apiPage * PAGE_SIZE);
-  const currentHour = new Date().getHours();
-  const chartData  = callsPerDay.filter((d) => d.hour <= currentHour);
+
+  // Bucket raw timestamps by browser-local hour (7–current, max 22)
+  const chartData = (() => {
+    const now           = new Date();
+    const localMidnight = new Date(now); localMidnight.setHours(0, 0, 0, 0);
+    const currentHour   = now.getHours();
+    const END           = Math.min(22, currentHour);
+    const hourMap: Record<number, { count: number; api: number }> = {};
+    for (let h = 7; h <= END; h++) hourMap[h] = { count: 0, api: 0 };
+    for (const iso of todayTimestamps.calls) {
+      const d = new Date(iso);
+      if (d >= localMidnight) { const h = d.getHours(); if (h in hourMap) hourMap[h].count++; }
+    }
+    for (const iso of todayTimestamps.api) {
+      const d = new Date(iso);
+      if (d >= localMidnight) { const h = d.getHours(); if (h in hourMap) hourMap[h].api++; }
+    }
+    return Object.entries(hourMap).map(([k, v]) => ({
+      hour: Number(k),
+      label: `${String(k).padStart(2, "0")}:00`,
+      count: v.count,
+      api: v.api,
+    }));
+  })();
 
   // suppress unused tick warning — it's used to trigger re-render for secAgo
   void tick;
@@ -318,7 +341,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                       dataKey="label"
                       tickLine={false} axisLine={false}
                       tick={{ fontSize: 9, fill: "#94a3b8" }}
-                      interval={Math.max(0, Math.floor(callsPerDay.length / 6) - 1)}
+                      interval={Math.max(0, Math.floor(chartData.length / 6) - 1)}
                     />
                     <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: "#94a3b8" }} allowDecimals={false} width={24} />
                     <Tooltip

@@ -63,9 +63,9 @@ export async function GET(request: Request) {
               }),
               db.call.count({ where: { createdAt: { gte: todayStart } } }),
               db.apiLog.count(),
-              // Today's calls for hourly chart
+              // Last 48h of calls — client will filter to its local today and bucket by local hour
               db.call.findMany({
-                where: { createdAt: { gte: todayStart } },
+                where: { createdAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) } },
                 select: { createdAt: true },
               }),
               // Last 100 API logs across all users (for the panel)
@@ -81,31 +81,18 @@ export async function GET(request: Request) {
                   userId: true,
                 },
               }),
-              // Today's API logs for hourly chart
+              // Last 48h of API logs — client will filter to its local today and bucket by local hour
               db.apiLog.findMany({
-                where: { createdAt: { gte: todayStart } },
+                where: { createdAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) } },
                 select: { createdAt: true },
               }),
             ]);
 
-          // Build hour → count map (7–22) — client will trim to current hour
-          const START_HOUR = 7;
-          const END_HOUR   = 22;
-          const hourMap:    Record<number, number> = {};
-          const apiHourMap: Record<number, number> = {};
-          for (let h = START_HOUR; h <= END_HOUR; h++) { hourMap[h] = 0; apiHourMap[h] = 0; }
-          for (const { createdAt } of callsTodayRaw) {
-            const h = createdAt.getHours();
-            if (h >= START_HOUR && h <= END_HOUR) hourMap[h]++;
-          }
-          for (const { createdAt } of apiTodayRaw) {
-            const h = createdAt.getHours();
-            if (h >= START_HOUR && h <= END_HOUR) apiHourMap[h]++;
-          }
-          const callsPerDay = Object.keys(hourMap).map((k) => {
-            const h = Number(k);
-            return { hour: h, label: `${String(h).padStart(2, "0")}:00`, count: hourMap[h], api: apiHourMap[h] };
-          });
+          // Send raw ISO timestamps — client buckets by its own local timezone
+          const todayTimestamps = {
+            calls: callsTodayRaw.map((c) => c.createdAt.toISOString()),
+            api:   apiTodayRaw.map((c) => c.createdAt.toISOString()),
+          };
 
           send({
             calls: recentCalls.map((c) => ({
@@ -128,7 +115,7 @@ export async function GET(request: Request) {
               callsToday,
               totalApiCalls,
             },
-            callsPerDay,
+            todayTimestamps,
             apiLogs: apiLogs.map((l) => ({
               id: l.id,
               endpoint: l.endpoint,
