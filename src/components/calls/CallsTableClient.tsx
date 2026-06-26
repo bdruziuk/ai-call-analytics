@@ -200,8 +200,8 @@ export function CallsTableClient({ t, lang, initialCalls, initialNextCursor = nu
 
   return (
     <div>
-      {/* ── Mobile cards (< md) ── */}
-      <div className="md:hidden divide-y divide-slate-100">
+      {/* ── Mobile cards (< lg) ── */}
+      <div className="lg:hidden divide-y divide-slate-100">
         {sortedCalls.length === 0 && (
           <p className="px-4 py-12 text-center text-sm text-slate-400">{t.calls.noCallsYet}</p>
         )}
@@ -249,8 +249,8 @@ export function CallsTableClient({ t, lang, initialCalls, initialNextCursor = nu
         </div>
       </div>
 
-      {/* ── Desktop table (≥ md) ── */}
-      <div className="hidden md:block overflow-x-auto">
+      {/* ── Desktop table (≥ lg) ── */}
+      <div className="hidden lg:block overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <thead>
             <tr className="border-b border-slate-100 bg-brand-50">
