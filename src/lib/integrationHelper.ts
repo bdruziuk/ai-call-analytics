@@ -68,7 +68,7 @@ export async function downloadAndQueueRecording(opts: {
   await writeFile(filePath, audioBuffer);
 
   const call = await db.call.create({
-    data: { fileName: baseName, filePath, status: "queued", reportType, userId },
+    data: { fileName: baseName, filePath, status: "queued", reportType, userId, source: prefix },
   });
 
   // Fire-and-forget — processCall deletes the file when it finishes

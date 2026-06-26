@@ -118,6 +118,7 @@ model Call {
   fileName        String
   filePath        String
 
+  source          String   @default("manual")   // "manual" | "binotel" | "ringostat" | "voiptime" | "kyivstar" | "twilio" | "aircall" | "api"
   status          String   @default("uploaded")
   reportType      String   @default("medium")
   errorMessage    String?

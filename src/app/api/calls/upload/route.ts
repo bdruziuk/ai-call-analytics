@@ -59,6 +59,7 @@ export async function POST(request: Request) {
         fileName:       file.name,
         filePath,
         status:         'queued',
+        source:         'manual',
         reportType,
         userId:         session.user.id,
         salesProfileId: salesProfileId || null,

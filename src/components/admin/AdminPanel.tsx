@@ -19,6 +19,7 @@ type CallRecord = {
   id: string;
   fileName: string;
   status: string;
+  source: string;
   score: number | null;
   saleStatus: string | null;
   language: string | null;
@@ -112,6 +113,29 @@ function fmtDuration(seconds: number | null): string {
   return m > 0
     ? `${m}:${String(s).padStart(2, "0")}`
     : `0:${String(s).padStart(2, "0")}`;
+}
+
+/* ── Source badge ─────────────────────────────────────────────────────────── */
+
+const SOURCE_META: Record<string, { label: string; emoji: string; cls: string }> = {
+  manual:   { label: "Manual",   emoji: "⬆️", cls: "bg-slate-100 text-slate-500" },
+  binotel:  { label: "Binotel",  emoji: "📞", cls: "bg-blue-50 text-blue-600" },
+  ringostat:{ label: "Ringostat",emoji: "📡", cls: "bg-indigo-50 text-indigo-600" },
+  voiptime: { label: "VoIPTime", emoji: "☁️", cls: "bg-sky-50 text-sky-600" },
+  kyivstar: { label: "Kyivstar", emoji: "🌐", cls: "bg-purple-50 text-purple-600" },
+  twilio:   { label: "Twilio",   emoji: "🔴", cls: "bg-red-50 text-red-600" },
+  aircall:  { label: "Aircall",  emoji: "✈️", cls: "bg-teal-50 text-teal-600" },
+  api:      { label: "API",      emoji: "⚡", cls: "bg-amber-50 text-amber-600" },
+};
+
+function SourceBadge({ source }: { source: string }) {
+  const m = SOURCE_META[source] ?? { label: source, emoji: "🔗", cls: "bg-slate-100 text-slate-500" };
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${m.cls}`}>
+      <span className="leading-none">{m.emoji}</span>
+      {m.label}
+    </span>
+  );
 }
 
 /* ── Status badge ─────────────────────────────────────────────────────────── */
@@ -214,6 +238,7 @@ function CallsTable({
                   <p className="truncate font-mono text-xs text-slate-700">{c.fileName}</p>
                   <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                     <StatusBadge status={c.status} t={t} />
+                    <SourceBadge source={c.source} />
                     <SaleBadge status={c.saleStatus} />
                     {c.score !== null && (
                       <span
@@ -281,6 +306,7 @@ function CallsTable({
                 <td className="px-3 py-2">
                   <div className="flex items-center gap-1.5">
                     <StatusBadge status={c.status} t={t} />
+                    <SourceBadge source={c.source} />
                     {c.status === "failed" && c.errorMessage && (
                       <button
                         onClick={() => setExpandedError(expandedError === c.id ? null : c.id)}

@@ -11,6 +11,7 @@ export type CallRow = {
   id: string;
   fileName: string;
   status: string;
+  source: string;
   product: string | null;
   saleStatus: string | null;
   score: number | null;
@@ -65,6 +66,28 @@ function sortRows(arr: CallRow[], key: SortKey, dir: SortDir): CallRow[] {
     }
     return av < bv ? (dir === "asc" ? -1 : 1) : av > bv ? (dir === "asc" ? 1 : -1) : 0;
   });
+}
+
+/* ── Source badge ── */
+const SOURCE_META: Record<string, { label: string; emoji: string; cls: string }> = {
+  manual:   { label: "Manual",   emoji: "⬆️", cls: "bg-slate-100 text-slate-500" },
+  binotel:  { label: "Binotel",  emoji: "📞", cls: "bg-blue-50 text-blue-600" },
+  ringostat:{ label: "Ringostat",emoji: "📡", cls: "bg-indigo-50 text-indigo-600" },
+  voiptime: { label: "VoIPTime", emoji: "☁️", cls: "bg-sky-50 text-sky-600" },
+  kyivstar: { label: "Kyivstar", emoji: "🌐", cls: "bg-purple-50 text-purple-600" },
+  twilio:   { label: "Twilio",   emoji: "🔴", cls: "bg-red-50 text-red-600" },
+  aircall:  { label: "Aircall",  emoji: "✈️", cls: "bg-teal-50 text-teal-600" },
+  api:      { label: "API",      emoji: "⚡", cls: "bg-amber-50 text-amber-600" },
+};
+
+function SourceBadge({ source }: { source: string }) {
+  const m = SOURCE_META[source] ?? { label: source, emoji: "🔗", cls: "bg-slate-100 text-slate-500" };
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${m.cls}`}>
+      <span className="leading-none">{m.emoji}</span>
+      {m.label}
+    </span>
+  );
 }
 
 /* ── Badges ── */
@@ -200,6 +223,7 @@ export function CallsTableClient({ t, lang, initialCalls, initialNextCursor = nu
               <p className="truncate text-sm font-semibold text-slate-800">{call.fileName}</p>
               <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                 <StatusBadge status={call.status} label={getStatusLabel(call.status)} />
+                <SourceBadge source={call.source} />
                 {call.saleStatus && (
                   <SaleStatusBadge status={call.saleStatus} label={getSaleStatusLabel(call.saleStatus)} />
                 )}
@@ -237,6 +261,7 @@ export function CallsTableClient({ t, lang, initialCalls, initialNextCursor = nu
               <SortableHeader col="saleStatus" label={t.calls.sale}    sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
               <SortableHeader col="score"      label={t.calls.score}   sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
               <SortableHeader col="status"     label={t.calls.status}  sortKey={sortKey} sortDir={sortDir} onSort={handleSort} />
+              <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wide text-brand-700">{t.calls.source ?? "Source"}</th>
               <th className="px-4 py-3 w-10"></th>
             </tr>
           </thead>
@@ -263,6 +288,9 @@ export function CallsTableClient({ t, lang, initialCalls, initialNextCursor = nu
                 <td className="px-4 py-3">
                   <StatusBadge status={call.status} label={getStatusLabel(call.status)} />
                 </td>
+                <td className="px-4 py-3">
+                  <SourceBadge source={call.source} />
+                </td>
                 <td className="px-4 py-3 w-10 text-center">
                   <Link href={`/${lang}/calls/${call.id}`} title={t.calls.view}
                     className="inline-flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-brand-50 hover:text-brand-600 transition-colors"
@@ -273,7 +301,7 @@ export function CallsTableClient({ t, lang, initialCalls, initialNextCursor = nu
               </tr>
             ))}
             {calls.length === 0 && (
-              <tr><td colSpan={8} className="px-4 py-12 text-center text-slate-400">{t.calls.noCallsYet}</td></tr>
+              <tr><td colSpan={9} className="px-4 py-12 text-center text-slate-400">{t.calls.noCallsYet}</td></tr>
             )}
           </tbody>
         </table>

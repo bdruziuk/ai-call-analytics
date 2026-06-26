@@ -42,6 +42,7 @@ export default async function CallsPage({ params }: Props) {
     id: c.id,
     fileName: c.fileName,
     status: c.status,
+    source: c.source,
     product: c.product,
     saleStatus: c.saleStatus,
     score: c.score,
