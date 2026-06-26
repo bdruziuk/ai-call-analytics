@@ -30,15 +30,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to parse request body" }, { status: 400 });
   }
 
-  console.log("[binotel] payload keys:", Object.keys(body), JSON.stringify(body));
+  // Binotel sends flat form-encoded keys with bracket notation, e.g. callDetails[disposition]
+  const disposition = String(
+    body["callDetails[disposition]"] ?? body.disposition ?? ""
+  ).toUpperCase();
 
-  const disposition = body.disposition ? String(body.disposition).toUpperCase() : null;
-  if (disposition && disposition !== "ANSWERED") {
+  if (disposition && disposition !== "ANSWER" && disposition !== "ANSWERED") {
     logApiRequest(auth.userId, "binotel", "skipped", 200);
     return NextResponse.json({ skipped: true, reason: `call disposition is ${disposition}` });
   }
 
-  const recordingUrl = String(body.file ?? body.file_url ?? body.record_url ?? body.recording_url ?? "");
+  // recordingStatus=uploading means the file isn't ready — return 503 so Binotel retries
+  const recordingStatus = String(body["callDetails[recordingStatus]"] ?? "").toLowerCase();
+  if (recordingStatus === "uploading") {
+    logApiRequest(auth.userId, "binotel", "skipped", 503);
+    return NextResponse.json({ error: "recording still uploading, please retry" }, { status: 503 });
+  }
+
+  const recordingUrl = String(
+    body["callDetails[linkToCallRecordInMyBusiness]"] ??
+    body["callDetails[file]"] ??
+    body["callDetails[record_url]"] ??
+    body.file ?? body.file_url ?? body.record_url ?? body.recording_url ?? ""
+  );
   if (!recordingUrl) {
     logApiRequest(auth.userId, "binotel", "no_recording", 400);
     return NextResponse.json({ error: "No recording URL in payload" }, { status: 400 });
