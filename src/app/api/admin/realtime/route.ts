@@ -42,7 +42,7 @@ export async function GET(request: Request) {
           const thirtyDaysAgo = new Date(todayStart);
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
 
-          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday, chartRaw, apiLogs] =
+          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday, chartRaw, apiLogs, apiChartRaw] =
             await Promise.all([
               db.call.findMany({
                 orderBy: { createdAt: "desc" },
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
                 select: { createdAt: true },
                 orderBy: { createdAt: "asc" },
               }),
-              // Last 100 API logs across all users
+              // Last 100 API logs across all users (for the panel)
               db.apiLog.findMany({
                 orderBy: { createdAt: "desc" },
                 take: 100,
@@ -85,20 +85,37 @@ export async function GET(request: Request) {
                   userId: true,
                 },
               }),
+              // API logs for the last 30 days (for chart bucketing)
+              db.apiLog.findMany({
+                where: { createdAt: { gte: thirtyDaysAgo } },
+                select: { createdAt: true },
+                orderBy: { createdAt: "asc" },
+              }),
             ]);
 
           // Build day → count map (YYYY-MM-DD)
           const dayMap: Record<string, number> = {};
+          const apiDayMap: Record<string, number> = {};
           for (let i = 0; i < 30; i++) {
             const d = new Date(thirtyDaysAgo);
             d.setDate(d.getDate() + i);
-            dayMap[d.toISOString().slice(0, 10)] = 0;
+            const key = d.toISOString().slice(0, 10);
+            dayMap[key] = 0;
+            apiDayMap[key] = 0;
           }
           for (const { createdAt } of chartRaw) {
             const key = createdAt.toISOString().slice(0, 10);
             if (key in dayMap) dayMap[key]++;
           }
-          const callsPerDay = Object.entries(dayMap).map(([date, count]) => ({ date, count }));
+          for (const { createdAt } of apiChartRaw) {
+            const key = createdAt.toISOString().slice(0, 10);
+            if (key in apiDayMap) apiDayMap[key]++;
+          }
+          const callsPerDay = Object.entries(dayMap).map(([date, count]) => ({
+            date,
+            count,
+            api: apiDayMap[date] ?? 0,
+          }));
 
           send({
             calls: recentCalls.map((c) => ({

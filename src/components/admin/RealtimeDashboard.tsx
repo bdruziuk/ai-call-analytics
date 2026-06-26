@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, WifiOff } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
 
 /* ── Types ── */
@@ -29,7 +29,7 @@ type Stats = {
   callsToday: number;
 };
 
-type DayPoint = { date: string; count: number };
+type DayPoint = { date: string; count: number; api: number };
 
 type ApiLogEntry = {
   id: string;
@@ -257,7 +257,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
             </h2>
             {callsPerDay.length > 0 && (
               <span className="text-xs text-slate-400">
-                peak {Math.max(...callsPerDay.map((d) => d.count))} calls
+                peak {Math.max(...callsPerDay.map((d) => d.count))} calls · {Math.max(...callsPerDay.map((d) => d.api))} api
               </span>
             )}
           </div>
@@ -268,7 +268,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
               </div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={callsPerDay} margin={{ top: 4, right: 16, left: -16, bottom: 0 }}>
+                <BarChart data={callsPerDay} margin={{ top: 4, right: 16, left: -16, bottom: 0 }} barCategoryGap="30%">
                   <CartesianGrid vertical={false} stroke="#f1f5f9" />
                   <XAxis
                     dataKey="date"
@@ -298,9 +298,19 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                           })
                         : String(v)
                     }
-                    formatter={(v) => [v ?? 0, "calls"]}
+                    formatter={(v, name) => [v ?? 0, name === "count" ? "Calls" : "API requests"]}
                   />
-                  <Bar dataKey="count" fill="#1C78AE" radius={[3, 3, 0, 0]} maxBarSize={28} />
+                  <Legend
+                    iconType="circle"
+                    iconSize={8}
+                    formatter={(value) => (
+                      <span style={{ fontSize: 11, color: "#64748b" }}>
+                        {value === "count" ? "Calls" : "API requests"}
+                      </span>
+                    )}
+                  />
+                  <Bar dataKey="count" name="count" fill="#1C78AE" radius={[3, 3, 0, 0]} maxBarSize={14} />
+                  <Bar dataKey="api"   name="api"   fill="#f59e0b" radius={[3, 3, 0, 0]} maxBarSize={14} />
                 </BarChart>
               </ResponsiveContainer>
             )}
