@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { validateApiKeyFromString } from "@/lib/apiAuth";
 import { downloadAndQueueRecording, VALID_REPORT_TYPES } from "@/lib/integrationHelper";
 import { logApiRequest } from "@/lib/apiLog";
+import { db } from "@/lib/db";
 
 async function getBinotelRecordingUrl(
   bKey: string,
@@ -27,11 +28,18 @@ export async function POST(request: Request) {
   const { searchParams } = new URL(request.url);
   const key        = searchParams.get("key") ?? "";
   const reportType = searchParams.get("reportType") ?? "medium";
-  const bKey       = searchParams.get("bKey") ?? "";
-  const bSecret    = searchParams.get("bSecret") ?? "";
 
   const auth = await validateApiKeyFromString(key);
   if (!auth) return NextResponse.json({ error: "Invalid or missing API key" }, { status: 401 });
+
+  // Load Binotel credentials stored in the user profile
+  const userCreds = await db.user.findUnique({
+    where: { id: auth.userId },
+    select: { binotelKey: true, binotelSecret: true },
+  });
+  const bKey    = userCreds?.binotelKey    ?? "";
+  const bSecret = userCreds?.binotelSecret ?? "";
+
   if (!VALID_REPORT_TYPES.includes(reportType as typeof VALID_REPORT_TYPES[number])) {
     logApiRequest(auth.userId, "binotel", "invalid_params", 400);
     return NextResponse.json({ error: "reportType must be one of: high_level, medium, detailed" }, { status: 400 });

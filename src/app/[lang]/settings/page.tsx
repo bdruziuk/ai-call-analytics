@@ -30,6 +30,8 @@ export default async function SettingsPage({ params, searchParams }: Props) {
       name:                          true,
       image:                         true,
       isTestAccount:                 true,
+      binotelKey:                    true,
+      binotelSecret:                 true,
       analyticsConsentAccepted:      true,
       analyticsConsentAcceptedAt:    true,
       analyticsConsentVersion:       true,
@@ -85,6 +87,8 @@ export default async function SettingsPage({ params, searchParams }: Props) {
       }}
       paymentStatus={paymentStatus}
       isTestAccount={!!dbUser.isTestAccount}
+      binotelKey={dbUser.binotelKey ?? null}
+      binotelSecret={dbUser.binotelSecret ?? null}
       consent={{
         analyticsAccepted:   !!dbUser.analyticsConsentAccepted,
         analyticsAcceptedAt: dbUser.analyticsConsentAcceptedAt?.toISOString() ?? null,

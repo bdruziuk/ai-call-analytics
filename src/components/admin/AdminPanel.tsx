@@ -64,6 +64,8 @@ type UserRecord = {
   planId: string;
   minutesUsed: number;
   createdAt: string;
+  binotelKey: string | null;
+  binotelSecret: string | null;
   calls: CallRecord[];
   salesProfiles: ProfileRecord[];
   apiKeys: ApiKeyRecord[];
@@ -362,12 +364,14 @@ const API_STATUS_META: Record<string, { label: string; cls: string }> = {
 
 /* ── API keys + request log ───────────────────────────────────────────────── */
 
-function ApiSection({ apiKeys, apiLogs, locale }: {
+function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret }: {
   apiKeys: ApiKeyRecord[];
   apiLogs: ApiLogRecord[];
   locale: string;
+  binotelKey: string | null;
+  binotelSecret: string | null;
 }) {
-  if (apiKeys.length === 0 && apiLogs.length === 0) return null;
+  if (apiKeys.length === 0 && apiLogs.length === 0 && !binotelKey) return null;
 
   return (
     <div className="border-t border-slate-100">
@@ -377,7 +381,7 @@ function ApiSection({ apiKeys, apiLogs, locale }: {
       </div>
 
       {/* Keys */}
-      {apiKeys.length > 0 && (
+      {(apiKeys.length > 0 || binotelKey) && (
         <div className="px-5 py-3 flex flex-wrap gap-2">
           {apiKeys.map((k) => (
             <div key={k.id} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs">
@@ -391,6 +395,20 @@ function ApiSection({ apiKeys, apiLogs, locale }: {
               )}
             </div>
           ))}
+          {binotelKey && (
+            <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-xs">
+              <span className="text-base leading-none">📞</span>
+              <span className="font-semibold text-slate-600">Binotel API Key:</span>
+              <span className="font-mono text-slate-700">{binotelKey}</span>
+              {binotelSecret && (
+                <>
+                  <span className="text-slate-400">·</span>
+                  <span className="font-semibold text-slate-600">Secret:</span>
+                  <span className="font-mono text-slate-500">{binotelSecret.slice(0, 4)}{"•".repeat(Math.max(0, binotelSecret.length - 4))}</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -747,7 +765,7 @@ function UserRow({
           )}
 
           {/* API keys + request log */}
-          <ApiSection apiKeys={user.apiKeys} apiLogs={user.apiLogs} locale={locale} />
+          <ApiSection apiKeys={user.apiKeys} apiLogs={user.apiLogs} locale={locale} binotelKey={user.binotelKey} binotelSecret={user.binotelSecret} />
         </div>
       )}
     </div>
@@ -863,6 +881,8 @@ function CreateAccountModal({
         planId:        data.planId ?? planId,
         minutesUsed:   0,
         createdAt:     data.createdAt,
+        binotelKey:    null,
+        binotelSecret: null,
         calls:         [],
         salesProfiles: [],
         apiKeys:       [],

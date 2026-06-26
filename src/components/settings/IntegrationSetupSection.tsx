@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Copy, Check, ChevronDown, Zap, ExternalLink } from "lucide-react";
+import { Copy, Check, ChevronDown, Zap, ExternalLink, Phone, Eye, EyeOff, Save, Loader2 } from "lucide-react";
 import type { ApiKeyRecord } from "@/components/settings/ApiKeySection";
 
 /* ─────────────────────────────────────────────────────────────────────────────
@@ -160,14 +160,43 @@ function CopyButton({ text, size = "sm" }: { text: string; size?: "sm" | "xs" })
 
 type Props = {
   apiKeys: ApiKeyRecord[];
+  binotelKey: string | null;
+  binotelSecret: string | null;
 };
 
-export function IntegrationSetupSection({ apiKeys }: Props) {
+export function IntegrationSetupSection({ apiKeys, binotelKey: initialBinotelKey, binotelSecret: initialBinotelSecret }: Props) {
   const [keyValue,     setKeyValue]     = useState("");
   const [integration,  setIntegration]  = useState<Integration>("binotel");
   const [reportType,   setReportType]   = useState<ReportType>("medium");
   const [keyDropOpen,  setKeyDropOpen]  = useState(false);
   const [intDropOpen,  setIntDropOpen]  = useState(false);
+
+  // Binotel credentials
+  const [bKey,         setBKey]         = useState(initialBinotelKey ?? "");
+  const [bSecret,      setBSecret]      = useState(initialBinotelSecret ?? "");
+  const [showBSecret,  setShowBSecret]  = useState(false);
+  const [credSaving,   setCredSaving]   = useState(false);
+  const [credSaved,    setCredSaved]    = useState(false);
+  const [credError,    setCredError]    = useState<string | null>(null);
+
+  async function saveBinotelCredentials() {
+    setCredSaving(true);
+    setCredError(null);
+    try {
+      const res = await fetch("/api/user", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ binotelKey: bKey || null, binotelSecret: bSecret || null }),
+      });
+      if (!res.ok) throw new Error();
+      setCredSaved(true);
+      setTimeout(() => setCredSaved(false), 3000);
+    } catch {
+      setCredError("Failed to save. Please try again.");
+    } finally {
+      setCredSaving(false);
+    }
+  }
 
   const meta = INTEGRATIONS[integration];
 
@@ -324,6 +353,72 @@ export function IntegrationSetupSection({ apiKeys }: Props) {
             ))}
           </div>
         </div>
+
+        {/* ── Binotel API credentials (only for Binotel) ── */}
+        {integration === "binotel" && (
+          <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Phone size={14} className="text-[#1C78AE]" />
+              <p className="text-sm font-semibold text-slate-800">Binotel API Credentials</p>
+              <span className="rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-semibold text-amber-700">Required for recordings</span>
+            </div>
+            <p className="text-xs text-slate-500">
+              Binotel call recordings are stored on their servers and require authentication to download.
+              Enter your Binotel API Key and Secret — found in your Binotel account under <strong>Settings → API</strong>.
+            </p>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">API Key</label>
+                <input
+                  type="text"
+                  value={bKey}
+                  onChange={(e) => setBKey(e.target.value)}
+                  placeholder="your-binotel-key"
+                  spellCheck={false}
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 font-mono text-xs text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-slate-600">API Secret</label>
+                <div className="relative">
+                  <input
+                    type={showBSecret ? "text" : "password"}
+                    value={bSecret}
+                    onChange={(e) => setBSecret(e.target.value)}
+                    placeholder="your-binotel-secret"
+                    spellCheck={false}
+                    className="w-full rounded-lg border border-slate-200 px-3 py-2 pr-9 font-mono text-xs text-slate-900 placeholder-slate-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowBSecret((v) => !v)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  >
+                    {showBSecret ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={saveBinotelCredentials}
+                disabled={credSaving}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-brand-600 px-4 py-2 text-xs font-semibold text-white hover:bg-brand-700 transition-colors disabled:opacity-50"
+              >
+                {credSaving
+                  ? <><Loader2 size={12} className="animate-spin" /> Saving…</>
+                  : credSaved
+                  ? <><Check size={12} /> Saved!</>
+                  : <><Save size={12} /> Save credentials</>
+                }
+              </button>
+              {credError && <p className="text-xs text-red-500">{credError}</p>}
+              {credSaved && <p className="text-xs text-emerald-600">Credentials saved — recordings will now download automatically.</p>}
+            </div>
+          </div>
+        )}
 
         {/* ── Generated webhook URL ── */}
         <div className={`rounded-xl border p-4 transition-colors ${isReady ? "border-brand-200 bg-brand-50" : "border-slate-200 bg-slate-50"}`}>

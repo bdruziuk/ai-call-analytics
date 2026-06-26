@@ -25,6 +25,9 @@ model User {
   marketingDemoConsentAcceptedAt DateTime?
   marketingDemoConsentVersion    String?
 
+  binotelKey    String?
+  binotelSecret String?
+
   calls         Call[]
   salesProfiles SalesProfile[]
   apiKeys       ApiKey[]

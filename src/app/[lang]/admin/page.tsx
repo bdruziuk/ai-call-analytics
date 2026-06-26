@@ -42,19 +42,17 @@ export default async function AdminPage({ params }: Props) {
 
   const [users, rawPromos] = await Promise.all([
     db.user.findMany({
-    include: {
-      salesProfiles: {
-        include: {
-          calls: { orderBy: { createdAt: "desc" } },
+      include: {
+        salesProfiles: {
+          include: { calls: { orderBy: { createdAt: "desc" } } },
+          orderBy: { createdAt: "asc" },
         },
-        orderBy: { createdAt: "asc" },
+        calls:        { orderBy: { createdAt: "desc" } },
+        subscription: { select: { planId: true, minutesUsed: true } },
+        apiKeys:      { select: { id: true, name: true, keyPrefix: true, lastUsedAt: true, createdAt: true }, orderBy: { createdAt: "desc" } },
+        _count:       { select: { calls: true, salesProfiles: true } },
       },
-      calls: { orderBy: { createdAt: "desc" } },
-      subscription: { select: { planId: true, minutesUsed: true } },
-      apiKeys: { select: { id: true, name: true, keyPrefix: true, lastUsedAt: true, createdAt: true }, orderBy: { createdAt: "desc" } },
-      _count: { select: { calls: true, salesProfiles: true } },
-    },
-    orderBy: { createdAt: "desc" },
+      orderBy: { createdAt: "desc" },
     }),
     db.promoCode.findMany({ orderBy: { createdAt: "desc" } }),
   ]);

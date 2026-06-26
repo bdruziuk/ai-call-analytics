@@ -42,6 +42,8 @@ type Props = {
   paymentStatus?: "success" | "cancelled" | null;
   isTestAccount?: boolean;
   consent?: ConsentInfo;
+  binotelKey?: string | null;
+  binotelSecret?: string | null;
 };
 
 const languages = [
@@ -50,7 +52,7 @@ const languages = [
   { code: "ru", label: "Русский", flag: "🇷🇺" },
 ];
 
-export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentStatus, isTestAccount = false, consent }: Props) {
+export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentStatus, isTestAccount = false, consent, binotelKey, binotelSecret }: Props) {
   const router                      = useRouter();
   const [name, setName]             = useState(user.name ?? "");
   const [image, setImage]           = useState(user.image ?? "");
@@ -329,7 +331,7 @@ export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentSt
       />
 
       {/* ── Integration Setup card ─────────────────────────────────────── */}
-      <IntegrationSetupSection apiKeys={apiKeys} />
+      <IntegrationSetupSection apiKeys={apiKeys} binotelKey={binotelKey ?? null} binotelSecret={binotelSecret ?? null} />
 
       {/* ── Consent card ──────────────────────────────────────────────── */}
       {consent && (

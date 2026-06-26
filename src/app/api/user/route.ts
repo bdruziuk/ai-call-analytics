@@ -16,7 +16,7 @@ export async function PATCH(request: Request) {
 
   const body = await request.json();
 
-  const data: { name?: string; image?: string | null } = {};
+  const data: { name?: string; image?: string | null; binotelKey?: string | null; binotelSecret?: string | null } = {};
 
   if (typeof body.name === "string") {
     const name = body.name.trim();
@@ -26,6 +26,14 @@ export async function PATCH(request: Request) {
 
   if ("image" in body) {
     data.image = typeof body.image === "string" ? body.image : null;
+  }
+
+  if ("binotelKey" in body) {
+    data.binotelKey = typeof body.binotelKey === "string" && body.binotelKey.trim() ? body.binotelKey.trim() : null;
+  }
+
+  if ("binotelSecret" in body) {
+    data.binotelSecret = typeof body.binotelSecret === "string" && body.binotelSecret.trim() ? body.binotelSecret.trim() : null;
   }
 
   if (Object.keys(data).length === 0) {
