@@ -29,7 +29,7 @@ type Stats = {
   callsToday: number;
 };
 
-type DayPoint = { date: string; count: number; api: number };
+type DayPoint = { hour: number; label: string; count: number; api: number };
 
 type ApiLogEntry = {
   id: string;
@@ -296,8 +296,8 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
 
           {/* Chart */}
           <Panel
-            title="Calls per Day"
-            sub="last 30 days"
+            title="Today's Activity"
+            sub="calls &amp; API by hour"
             right={callsPerDay.length > 0
               ? `peak ${Math.max(...callsPerDay.map((d) => d.count))} calls · ${Math.max(...callsPerDay.map((d) => d.api))} api`
               : undefined}
@@ -311,23 +311,16 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                   <BarChart data={callsPerDay} margin={{ top: 2, right: 12, left: -18, bottom: 0 }} barCategoryGap="30%">
                     <CartesianGrid vertical={false} stroke="#f1f5f9" />
                     <XAxis
-                      dataKey="date"
+                      dataKey="label"
                       tickLine={false} axisLine={false}
                       tick={{ fontSize: 9, fill: "#94a3b8" }}
-                      tickFormatter={(v: string) =>
-                        new Date(v + "T00:00:00").toLocaleDateString([], { month: "short", day: "numeric" })
-                      }
-                      interval={Math.floor(callsPerDay.length / 6)}
+                      interval={Math.max(0, Math.floor(callsPerDay.length / 6) - 1)}
                     />
                     <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: "#94a3b8" }} allowDecimals={false} width={24} />
                     <Tooltip
                       cursor={{ fill: "#f1f5f9" }}
                       contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #e2e8f0" }}
-                      labelFormatter={(v) =>
-                        typeof v === "string"
-                          ? new Date(v + "T00:00:00").toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" })
-                          : String(v)
-                      }
+                      labelFormatter={(v) => String(v)}
                       formatter={(v, name) => [v ?? 0, name === "count" ? "Calls" : "API requests"]}
                     />
                     <Legend

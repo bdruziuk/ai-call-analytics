@@ -38,11 +38,7 @@ export async function GET(request: Request) {
           const todayStart = new Date();
           todayStart.setHours(0, 0, 0, 0);
 
-          // 30 days ago for the chart
-          const thirtyDaysAgo = new Date(todayStart);
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
-
-          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday, chartRaw, apiLogs, apiChartRaw] =
+          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday, callsTodayRaw, apiLogs, apiTodayRaw] =
             await Promise.all([
               db.call.findMany({
                 orderBy: { createdAt: "desc" },
@@ -66,11 +62,10 @@ export async function GET(request: Request) {
                 where: { status: { in: ["queued", "transcribing", "analyzing"] } },
               }),
               db.call.count({ where: { createdAt: { gte: todayStart } } }),
-              // Raw calls for the last 30 days — group by day in JS
+              // Today's calls for hourly chart
               db.call.findMany({
-                where: { createdAt: { gte: thirtyDaysAgo } },
+                where: { createdAt: { gte: todayStart } },
                 select: { createdAt: true },
-                orderBy: { createdAt: "asc" },
               }),
               // Last 100 API logs across all users (for the panel)
               db.apiLog.findMany({
@@ -85,36 +80,30 @@ export async function GET(request: Request) {
                   userId: true,
                 },
               }),
-              // API logs for the last 30 days (for chart bucketing)
+              // Today's API logs for hourly chart
               db.apiLog.findMany({
-                where: { createdAt: { gte: thirtyDaysAgo } },
+                where: { createdAt: { gte: todayStart } },
                 select: { createdAt: true },
-                orderBy: { createdAt: "asc" },
               }),
             ]);
 
-          // Build day → count map (YYYY-MM-DD)
-          const dayMap: Record<string, number> = {};
-          const apiDayMap: Record<string, number> = {};
-          for (let i = 0; i < 30; i++) {
-            const d = new Date(thirtyDaysAgo);
-            d.setDate(d.getDate() + i);
-            const key = d.toISOString().slice(0, 10);
-            dayMap[key] = 0;
-            apiDayMap[key] = 0;
+          // Build hour → count map (0–23) for today
+          const currentHour = new Date().getHours();
+          const hourMap:    number[] = Array(currentHour + 1).fill(0);
+          const apiHourMap: number[] = Array(currentHour + 1).fill(0);
+          for (const { createdAt } of callsTodayRaw) {
+            const h = createdAt.getHours();
+            if (h <= currentHour) hourMap[h]++;
           }
-          for (const { createdAt } of chartRaw) {
-            const key = createdAt.toISOString().slice(0, 10);
-            if (key in dayMap) dayMap[key]++;
+          for (const { createdAt } of apiTodayRaw) {
+            const h = createdAt.getHours();
+            if (h <= currentHour) apiHourMap[h]++;
           }
-          for (const { createdAt } of apiChartRaw) {
-            const key = createdAt.toISOString().slice(0, 10);
-            if (key in apiDayMap) apiDayMap[key]++;
-          }
-          const callsPerDay = Object.entries(dayMap).map(([date, count]) => ({
-            date,
+          const callsPerDay = hourMap.map((count, h) => ({
+            hour: h,
+            label: `${String(h).padStart(2, "0")}:00`,
             count,
-            api: apiDayMap[date] ?? 0,
+            api: apiHourMap[h] ?? 0,
           }));
 
           send({
