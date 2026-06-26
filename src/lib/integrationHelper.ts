@@ -36,8 +36,24 @@ export async function downloadAndQueueRecording(opts: {
     return { skipped: true, reason: "minute_limit_exceeded" };
   }
 
-  const res = await fetch(recordingUrl);
+  const res = await fetch(recordingUrl, { redirect: "follow" });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+  const contentType = res.headers.get("content-type") ?? "";
+  const isAudio = contentType.startsWith("audio/") ||
+    contentType.includes("octet-stream") ||
+    contentType.includes("mpeg") ||
+    contentType.includes("mp4") ||
+    contentType.includes("ogg") ||
+    contentType.includes("wav") ||
+    contentType.includes("webm") ||
+    contentType.includes("flac");
+
+  if (!isAudio) {
+    const snippet = (await res.text()).slice(0, 200);
+    throw new Error(`HTTP_CONTENT Non-audio response (${contentType}): ${snippet}`);
+  }
+
   const audioBuffer = Buffer.from(await res.arrayBuffer());
 
   const urlPathname = new URL(recordingUrl).pathname;

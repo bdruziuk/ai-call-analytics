@@ -110,6 +110,11 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("[POST /api/integrations/binotel]", err);
     logApiRequest(auth.userId, "binotel", "error", 502);
+    if (err instanceof Error && err.message.startsWith("HTTP_CONTENT")) {
+      // Got HTML/redirect instead of audio — recording not ready yet, ask Binotel to retry
+      logApiRequest(auth.userId, "binotel", "skipped", 503);
+      return NextResponse.json({ error: "recording not ready, please retry" }, { status: 503 });
+    }
     if (err instanceof Error && err.message.startsWith("HTTP"))
       return NextResponse.json({ error: `Failed to download recording: ${err.message}` }, { status: 502 });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
