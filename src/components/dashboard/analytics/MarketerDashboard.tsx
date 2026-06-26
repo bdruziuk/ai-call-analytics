@@ -96,8 +96,8 @@ export function MarketerDashboard({ data }: Props) {
 
       {/* ── Traffic source table ── */}
       <Section title="📊 Ефективність джерел трафіку">
-        {/* Mobile cards */}
-        <div className="md:hidden divide-y divide-slate-100">
+        {/* Mobile + tablet portrait cards */}
+        <div className="lg:hidden divide-y divide-slate-100">
           {trafficSources.map((src) => (
             <div key={src.id} className="px-4 py-4">
               <div className="mb-2 flex items-start justify-between gap-2">
@@ -119,7 +119,7 @@ export function MarketerDashboard({ data }: Props) {
         </div>
 
         {/* Desktop table */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-slate-50/70 border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
               <tr>
