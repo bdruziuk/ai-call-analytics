@@ -89,13 +89,20 @@ export async function POST(request: Request) {
     }
   }
 
-  // Fallback: try direct URL fields from the payload
+  // Fallback: use URL fields from the payload (including portal link as last resort)
   if (!recordingUrl) {
     recordingUrl = String(
       body["callDetails[file]"] ??
       body["callDetails[record_url]"] ??
+      body["callDetails[linkToCallRecordInMyBusiness]"] ??
       body.file ?? body.file_url ?? body.record_url ?? body.recording_url ?? ""
     );
+  }
+
+  // If still uploading and no usable URL, ask Binotel to retry
+  if (!recordingUrl && recordingStatus === "uploading") {
+    logApiRequest(auth.userId, "binotel", "skipped", 503);
+    return NextResponse.json({ error: "recording not ready, please retry" }, { status: 503 });
   }
 
   if (!recordingUrl) {
