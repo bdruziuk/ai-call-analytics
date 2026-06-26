@@ -533,62 +533,67 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
           )}
         </div>
 
-        {/* ── Mobile cards (< md) ── */}
-        <div className="md:hidden divide-y divide-slate-100">
+        {/* ── Cards (< lg: mobile + tablet portrait) ── */}
+        <div className="lg:hidden divide-y divide-slate-100">
           {sortedCalls.length === 0 && (
             <p className="px-4 py-12 text-center text-sm text-slate-400">{t.dashboard.table.noCallsYet}</p>
           )}
           {sortedCalls.map((call) => {
             const profile = profiles.find((p) => p.id === call.salesProfileId);
             return (
-              <div key={call.id} className="flex items-start gap-3 px-4 py-4 hover:bg-slate-50 transition-colors">
-                {/* Left: status indicator */}
-                <span className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${
-                  call.status === "completed" ? "bg-emerald-400" :
-                  call.status === "failed"    ? "bg-red-400" :
-                  call.status === "queued"    ? "bg-slate-300" :
-                  "bg-brand-400 animate-pulse"
-                }`} />
-
-                {/* Center: main info (tappable link) */}
-                <Link href={`/${lang}/calls/${call.id}`} className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold text-slate-800">{call.fileName}</p>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <StatusBadge status={call.status} label={getStatusLabel(call.status)} error={formatError(call.errorMessage)} />
-                    {call.saleStatus && (
-                      <SaleStatusBadge status={call.saleStatus} label={getSaleStatusLabel(call.saleStatus)} />
-                    )}
-                  </div>
-                  <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-400">
-                    <span>{new Date(call.createdAt).toLocaleDateString(t.dateLocale)}</span>
-                    {call.score !== null && (
-                      <span className="font-semibold text-brand-600">{call.score}<span className="font-normal text-slate-400">/10</span></span>
-                    )}
-                    {call.product && <span className="truncate max-w-[140px]">{call.product}</span>}
-                    {profile && (
-                      <span className="flex items-center gap-1">
-                        <ProfileAvatar photo={profile.photo} name={profile.name} className="h-4 w-4" textClassName="text-[8px]" />
-                        {profile.name}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-
-                {/* Right: actions */}
-                <div className="flex shrink-0 items-center gap-2 mt-0.5">
-                  <Link href={`/${lang}/calls/${call.id}`} aria-label={t.dashboard.table.view} className="rounded-lg p-2 text-slate-300 hover:bg-brand-50 hover:text-brand-600 transition-colors">
-                    <Eye className="h-5 w-5" />
+              <div key={call.id} className="px-4 py-3 hover:bg-slate-50 transition-colors sm:px-5">
+                {/* Top row: filename + actions */}
+                <div className="flex items-start gap-2">
+                  <span className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
+                    call.status === "completed" ? "bg-emerald-400" :
+                    call.status === "failed"    ? "bg-red-400" :
+                    call.status === "queued"    ? "bg-slate-300" :
+                    "bg-brand-400 animate-pulse"
+                  }`} />
+                  <Link href={`/${lang}/calls/${call.id}`} className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-800">{call.fileName}</p>
                   </Link>
-                  <button
-                    onClick={() => handleDelete(call.id)}
-                    disabled={deletingId === call.id}
-                    aria-label={t.admin.deleteCall}
-                    className="rounded-lg p-2 text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-40"
-                  >
-                    {deletingId === call.id
-                      ? <Loader2 className="h-5 w-5 animate-spin" />
-                      : <Trash2 className="h-5 w-5" />}
-                  </button>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <Link href={`/${lang}/calls/${call.id}`} aria-label={t.dashboard.table.view}
+                      className="rounded-lg p-1.5 text-slate-300 hover:bg-brand-50 hover:text-brand-600 transition-colors">
+                      <Eye className="h-4 w-4" />
+                    </Link>
+                    <button onClick={() => handleDelete(call.id)} disabled={deletingId === call.id}
+                      aria-label={t.admin.deleteCall}
+                      className="rounded-lg p-1.5 text-slate-300 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-40">
+                      {deletingId === call.id
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <Trash2 className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Middle row: badges */}
+                <div className="mt-1.5 ml-4 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <StatusBadge status={call.status} label={getStatusLabel(call.status)} error={formatError(call.errorMessage)} />
+                  {call.saleStatus && (
+                    <SaleStatusBadge status={call.saleStatus} label={getSaleStatusLabel(call.saleStatus)} />
+                  )}
+                  {call.score !== null && (
+                    <span className="text-xs font-semibold text-brand-600">
+                      {call.score}<span className="font-normal text-slate-400">/10</span>
+                    </span>
+                  )}
+                </div>
+
+                {/* Bottom row: meta */}
+                <div className="mt-1 ml-4 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-400">
+                  <span>{new Date(call.createdAt).toLocaleDateString(t.dateLocale)}</span>
+                  {call.product && <span className="truncate max-w-[180px]">{call.product}</span>}
+                  {getReportTypeLabel(call.reportType) && (
+                    <span>{getReportTypeLabel(call.reportType)}</span>
+                  )}
+                  {profile && (
+                    <span className="flex items-center gap-1">
+                      <ProfileAvatar photo={profile.photo} name={profile.name} className="h-3.5 w-3.5" textClassName="text-[7px]" />
+                      {profile.name}
+                    </span>
+                  )}
                 </div>
               </div>
             );
@@ -600,8 +605,8 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
           </div>
         </div>
 
-        {/* ── Desktop table (≥ md) ── */}
-        <div className="hidden md:block overflow-x-auto">
+        {/* ── Desktop table (≥ lg) ── */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="border-b border-slate-100 bg-brand-50">
