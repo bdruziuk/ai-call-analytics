@@ -3,7 +3,7 @@ import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { validateApiKey } from "@/lib/apiAuth";
 import { db } from "@/lib/db";
-import { processCall } from "@/services/call.service";
+import { enqueueCall } from "@/services/call.service";
 import { checkUploadAllowed } from "@/lib/planLimits";
 
 /* ── GET /api/v1/calls — list calls ─────────────────────────────────── */
@@ -104,10 +104,7 @@ export async function POST(request: Request) {
       },
     });
 
-    // Kick off processing without blocking the response
-    processCall(call.id).catch((err) =>
-      console.error("[POST /api/v1/calls] processCall error:", err),
-    );
+    enqueueCall(call.id, "v1");
 
     return NextResponse.json(
       {

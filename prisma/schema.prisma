@@ -123,7 +123,9 @@ model Call {
   reportType      String   @default("medium")
   errorMessage    String?
 
-  durationSeconds Int?     // audio duration populated after transcription
+  durationSeconds     Int?
+  retryCount          Int      @default(0)
+  processingStartedAt DateTime?
 
   language        String?
 
@@ -146,4 +148,7 @@ model Call {
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
+  @@index([status])
+  @@index([userId, status, createdAt(sort: Desc)])
 }

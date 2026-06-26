@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { db } from "@/lib/db";
-import { processCall } from "@/services/call.service";
+import { enqueueCall } from "@/services/call.service";
 import { checkUploadAllowed } from "@/lib/planLimits";
 
 export const VALID_REPORT_TYPES = ["high_level", "medium", "detailed"] as const;
@@ -71,10 +71,8 @@ export async function downloadAndQueueRecording(opts: {
     data: { fileName: baseName, filePath, status: "queued", reportType, userId, source: prefix },
   });
 
-  // Fire-and-forget — processCall deletes the file when it finishes
-  processCall(call.id).catch((err) =>
-    console.error(`[${prefix}] processCall:`, err),
-  );
+  // Enqueue through the concurrency limiter — processCall deletes the file when done
+  enqueueCall(call.id, prefix);
 
   return {
     id: call.id,
