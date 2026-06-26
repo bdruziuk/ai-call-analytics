@@ -391,6 +391,8 @@ const API_STATUS_META: Record<string, { label: string; cls: string }> = {
 
 /* ── API keys + request log ───────────────────────────────────────────────── */
 
+const API_LOG_PAGE_SIZE = 10;
+
 function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret }: {
   apiKeys: ApiKeyRecord[];
   apiLogs: ApiLogRecord[];
@@ -398,7 +400,14 @@ function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret }: {
   binotelKey: string | null;
   binotelSecret: string | null;
 }) {
+  const [logPage, setLogPage] = useState(1);
   if (apiKeys.length === 0 && apiLogs.length === 0 && !binotelKey) return null;
+
+  const totalPages = Math.max(1, Math.ceil(apiLogs.length / API_LOG_PAGE_SIZE));
+  const pageStart  = (logPage - 1) * API_LOG_PAGE_SIZE;
+  const pageSlice  = apiLogs.slice(pageStart, pageStart + API_LOG_PAGE_SIZE);
+  const from       = pageStart + 1;
+  const to         = Math.min(logPage * API_LOG_PAGE_SIZE, apiLogs.length);
 
   return (
     <div className="border-t border-slate-100">
@@ -451,7 +460,7 @@ function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret }: {
               </tr>
             </thead>
             <tbody>
-              {apiLogs.map((log) => {
+              {pageSlice.map((log) => {
                 const meta = API_STATUS_META[log.status] ?? { label: log.status, cls: "bg-slate-100 text-slate-600 border-slate-200" };
                 return (
                   <tr key={log.id} className="border-b border-slate-50 hover:bg-slate-50/50">
@@ -469,6 +478,29 @@ function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret }: {
               })}
             </tbody>
           </table>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-slate-100 px-5 py-2">
+              <span className="text-[10px] text-slate-400">{from}–{to} of {apiLogs.length}</span>
+              <div className="flex items-center gap-0.5">
+                {[
+                  { label: "«", action: () => setLogPage(1),            disabled: logPage === 1 },
+                  { label: "‹", action: () => setLogPage((p) => p - 1), disabled: logPage === 1 },
+                  { label: "›", action: () => setLogPage((p) => p + 1), disabled: logPage === totalPages },
+                  { label: "»", action: () => setLogPage(totalPages),   disabled: logPage === totalPages },
+                ].map(({ label, action, disabled }) => (
+                  <button
+                    key={label}
+                    onClick={action}
+                    disabled={disabled}
+                    className="rounded px-1.5 py-0.5 text-[10px] text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-default"
+                  >
+                    {label}
+                  </button>
+                ))}
+                <span className="ml-1 text-[10px] text-slate-400">p.{logPage}/{totalPages}</span>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
