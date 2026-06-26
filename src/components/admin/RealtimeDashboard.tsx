@@ -238,6 +238,8 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
   const secAgo     = lastUpdate ? Math.round((Date.now() - lastUpdate.getTime()) / 1000) : null;
   const callsSlice = calls.slice((callsPage - 1) * PAGE_SIZE, callsPage * PAGE_SIZE);
   const apiSlice   = apiLogs.slice((apiPage - 1) * PAGE_SIZE, apiPage * PAGE_SIZE);
+  const currentHour = new Date().getHours();
+  const chartData  = callsPerDay.filter((d) => d.hour <= currentHour);
 
   // suppress unused tick warning — it's used to trigger re-render for secAgo
   void tick;
@@ -300,17 +302,17 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
           <Panel
             title="Today's Activity"
             sub="calls &amp; API by hour"
-            right={callsPerDay.length > 0
-              ? `peak ${Math.max(...callsPerDay.map((d) => d.count))} calls · ${Math.max(...callsPerDay.map((d) => d.api))} api`
+            right={chartData.length > 0
+              ? `peak ${Math.max(...chartData.map((d) => d.count))} calls · ${Math.max(...chartData.map((d) => d.api))} api`
               : undefined}
             className="shrink-0 h-44"
           >
             <div className="flex-1 min-h-0 px-1 py-2">
-              {callsPerDay.length === 0 ? (
+              {chartData.length === 0 ? (
                 <div className="flex h-full items-center justify-center text-xs text-slate-300">Loading…</div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={callsPerDay} margin={{ top: 6, right: 12, left: -18, bottom: 0 }}>
+                  <LineChart data={chartData} margin={{ top: 6, right: 12, left: -18, bottom: 0 }}>
                     <CartesianGrid vertical={false} stroke="#f1f5f9" />
                     <XAxis
                       dataKey="label"

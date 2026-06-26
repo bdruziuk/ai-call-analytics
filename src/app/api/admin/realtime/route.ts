@@ -88,9 +88,9 @@ export async function GET(request: Request) {
               }),
             ]);
 
-          // Build hour → count map (7 – current hour, capped at 22)
+          // Build hour → count map (7–22) — client will trim to current hour
           const START_HOUR = 7;
-          const END_HOUR   = Math.min(22, new Date().getHours());
+          const END_HOUR   = 22;
           const hourMap:    Record<number, number> = {};
           const apiHourMap: Record<number, number> = {};
           for (let h = START_HOUR; h <= END_HOUR; h++) { hourMap[h] = 0; apiHourMap[h] = 0; }
