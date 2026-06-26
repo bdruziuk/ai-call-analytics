@@ -13,8 +13,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "reportType must be one of: high_level, medium, detailed" }, { status: 400 });
 
   let body: Record<string, unknown>;
-  try { body = await request.json(); }
-  catch { return NextResponse.json({ error: "Expected JSON body" }, { status: 400 }); }
+  const contentType = request.headers.get("content-type") ?? "";
+  try {
+    if (contentType.includes("application/json")) {
+      body = await request.json();
+    } else {
+      const text = await request.text();
+      console.log("[binotel] raw body:", text);
+      body = Object.fromEntries(new URLSearchParams(text));
+    }
+  } catch {
+    return NextResponse.json({ error: "Failed to parse request body" }, { status: 400 });
+  }
+
+  console.log("[binotel] payload keys:", Object.keys(body), JSON.stringify(body));
 
   const disposition = body.disposition ? String(body.disposition).toUpperCase() : null;
   if (disposition && disposition !== "ANSWERED")
