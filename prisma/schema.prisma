@@ -84,6 +84,17 @@ model PromoCode {
   createdAt DateTime  @default(now())
 }
 
+model ApiLog {
+  id         String   @id @default(cuid())
+  userId     String
+  endpoint   String                       // e.g. "binotel", "ringostat", "voiptime"
+  status     String                       // "success" | "skipped" | "error" | "auth_failed" | "no_recording"
+  statusCode Int
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
 model PasswordResetToken {
   id        String   @id @default(cuid())
   email     String

@@ -51,6 +51,7 @@ export default async function AdminPage({ params }: Props) {
       },
       calls: { orderBy: { createdAt: "desc" } },
       subscription: { select: { planId: true, minutesUsed: true } },
+      apiKeys: { select: { id: true, name: true, keyPrefix: true, lastUsedAt: true, createdAt: true }, orderBy: { createdAt: "desc" } },
       _count: { select: { calls: true, salesProfiles: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -58,11 +59,26 @@ export default async function AdminPage({ params }: Props) {
     db.promoCode.findMany({ orderBy: { createdAt: "desc" } }),
   ]);
 
+  // Fetch last 50 API logs per user in one query
+  const rawApiLogs = await db.apiLog.findMany({
+    where: { userId: { in: users.map((u) => u.id) } },
+    orderBy: { createdAt: "desc" },
+    take: 50 * users.length,
+  });
+
   const promoCodes = rawPromos.map((p) => ({
     ...p,
     createdAt: p.createdAt.toISOString(),
     usedAt:    p.usedAt?.toISOString() ?? null,
   }));
+
+  // Group API logs by userId (last 50 per user)
+  const apiLogsByUser: Record<string, { id: string; endpoint: string; status: string; statusCode: number; createdAt: string }[]> = {};
+  for (const log of rawApiLogs) {
+    if (!apiLogsByUser[log.userId]) apiLogsByUser[log.userId] = [];
+    if (apiLogsByUser[log.userId].length < 50)
+      apiLogsByUser[log.userId].push({ ...log, createdAt: log.createdAt.toISOString() });
+  }
 
   // Serialise Date → string so client components receive plain JSON
   const serialised = users.map((u: typeof users[number]) => ({
@@ -86,6 +102,12 @@ export default async function AdminPage({ params }: Props) {
         updatedAt: c.updatedAt.toISOString(),
       })),
     })),
+    apiKeys: u.apiKeys.map((k) => ({
+      ...k,
+      lastUsedAt: k.lastUsedAt?.toISOString() ?? null,
+      createdAt:  k.createdAt.toISOString(),
+    })),
+    apiLogs: apiLogsByUser[u.id] ?? [],
   }));
 
   return (

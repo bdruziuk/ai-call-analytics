@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ChevronDown, ChevronRight, RefreshCw, Shield,
   Users, PhoneCall, CheckCircle2, XCircle, Loader2,
-  Clock, User, Search, Wifi, Trash2, UserPlus, X,
+  Clock, User, Search, Wifi, Trash2, UserPlus, X, Key, Activity,
 } from "lucide-react";
 import type ukDict from "@/dictionaries/uk.json";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
@@ -38,6 +38,22 @@ type ProfileRecord = {
   createdAt: string;
 };
 
+type ApiKeyRecord = {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  lastUsedAt: string | null;
+  createdAt: string;
+};
+
+type ApiLogRecord = {
+  id: string;
+  endpoint: string;
+  status: string;
+  statusCode: number;
+  createdAt: string;
+};
+
 type UserRecord = {
   id: string;
   name: string | null;
@@ -50,6 +66,8 @@ type UserRecord = {
   createdAt: string;
   calls: CallRecord[];
   salesProfiles: ProfileRecord[];
+  apiKeys: ApiKeyRecord[];
+  apiLogs: ApiLogRecord[];
   _count: { calls: number; salesProfiles: number };
 };
 
@@ -327,6 +345,87 @@ function CallsTable({
         </tbody>
       </table>
       </div>
+    </div>
+  );
+}
+
+/* ── API status badge ─────────────────────────────────────────────────────── */
+
+const API_STATUS_META: Record<string, { label: string; cls: string }> = {
+  success:       { label: "OK",          cls: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  skipped:       { label: "Skipped",     cls: "bg-slate-100 text-slate-500 border-slate-200" },
+  no_recording:  { label: "No rec",      cls: "bg-amber-50 text-amber-700 border-amber-200" },
+  error:         { label: "Error",       cls: "bg-red-50 text-red-600 border-red-200" },
+  auth_failed:   { label: "Auth fail",   cls: "bg-red-50 text-red-600 border-red-200" },
+  invalid_params:{ label: "Bad params",  cls: "bg-orange-50 text-orange-700 border-orange-200" },
+};
+
+/* ── API keys + request log ───────────────────────────────────────────────── */
+
+function ApiSection({ apiKeys, apiLogs, locale }: {
+  apiKeys: ApiKeyRecord[];
+  apiLogs: ApiLogRecord[];
+  locale: string;
+}) {
+  if (apiKeys.length === 0 && apiLogs.length === 0) return null;
+
+  return (
+    <div className="border-t border-slate-100">
+      <div className="flex items-center gap-2 bg-slate-50 px-5 py-2.5">
+        <Key size={12} className="text-slate-400" />
+        <span className="text-xs font-semibold text-slate-500">API</span>
+      </div>
+
+      {/* Keys */}
+      {apiKeys.length > 0 && (
+        <div className="px-5 py-3 flex flex-wrap gap-2">
+          {apiKeys.map((k) => (
+            <div key={k.id} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs">
+              <Key size={10} className="text-slate-400 flex-shrink-0" />
+              <span className="font-mono text-slate-700 font-semibold">{k.keyPrefix}…</span>
+              <span className="text-slate-400">{k.name}</span>
+              {k.lastUsedAt ? (
+                <span className="text-slate-400">· {fmtDate(k.lastUsedAt, locale)}</span>
+              ) : (
+                <span className="text-slate-300">· never used</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Request log */}
+      {apiLogs.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[480px] text-xs">
+            <thead>
+              <tr className="border-b border-slate-100 bg-slate-50/60">
+                {["Endpoint", "Status", "Code", "Date"].map((h) => (
+                  <th key={h} className="px-3 py-1.5 text-left font-medium text-slate-400 first:pl-5 last:pr-4">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {apiLogs.map((log) => {
+                const meta = API_STATUS_META[log.status] ?? { label: log.status, cls: "bg-slate-100 text-slate-600 border-slate-200" };
+                return (
+                  <tr key={log.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                    <td className="py-1.5 pl-5 pr-3 font-mono text-slate-600 capitalize">{log.endpoint}</td>
+                    <td className="px-3 py-1.5">
+                      <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${meta.cls}`}>
+                        <Activity size={8} />
+                        {meta.label}
+                      </span>
+                    </td>
+                    <td className="px-3 py-1.5 font-mono text-slate-500">{log.statusCode}</td>
+                    <td className="px-3 py-1.5 pr-4 text-slate-400 whitespace-nowrap">{fmt(log.createdAt, locale)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -646,6 +745,9 @@ function UserRow({
               />
             </div>
           )}
+
+          {/* API keys + request log */}
+          <ApiSection apiKeys={user.apiKeys} apiLogs={user.apiLogs} locale={locale} />
         </div>
       )}
     </div>
@@ -763,6 +865,8 @@ function CreateAccountModal({
         createdAt:     data.createdAt,
         calls:         [],
         salesProfiles: [],
+        apiKeys:       [],
+        apiLogs:       [],
         _count:        { calls: 0, salesProfiles: 0 },
       });
       onClose();
