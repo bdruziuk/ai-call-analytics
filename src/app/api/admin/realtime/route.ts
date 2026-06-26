@@ -38,7 +38,11 @@ export async function GET(request: Request) {
           const todayStart = new Date();
           todayStart.setHours(0, 0, 0, 0);
 
-          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday] =
+          // 30 days ago for the chart
+          const thirtyDaysAgo = new Date(todayStart);
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+
+          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday, chartRaw] =
             await Promise.all([
               db.call.findMany({
                 orderBy: { createdAt: "desc" },
@@ -62,7 +66,26 @@ export async function GET(request: Request) {
                 where: { status: { in: ["queued", "transcribing", "analyzing"] } },
               }),
               db.call.count({ where: { createdAt: { gte: todayStart } } }),
+              // Raw calls for the last 30 days — group by day in JS
+              db.call.findMany({
+                where: { createdAt: { gte: thirtyDaysAgo } },
+                select: { createdAt: true },
+                orderBy: { createdAt: "asc" },
+              }),
             ]);
+
+          // Build day → count map (YYYY-MM-DD)
+          const dayMap: Record<string, number> = {};
+          for (let i = 0; i < 30; i++) {
+            const d = new Date(thirtyDaysAgo);
+            d.setDate(d.getDate() + i);
+            dayMap[d.toISOString().slice(0, 10)] = 0;
+          }
+          for (const { createdAt } of chartRaw) {
+            const key = createdAt.toISOString().slice(0, 10);
+            if (key in dayMap) dayMap[key]++;
+          }
+          const callsPerDay = Object.entries(dayMap).map(([date, count]) => ({ date, count }));
 
           send({
             calls: recentCalls.map((c) => ({
@@ -84,6 +107,7 @@ export async function GET(request: Request) {
               activeNow,
               callsToday,
             },
+            callsPerDay,
           });
         } catch (err) {
           console.error("[realtime]", err);

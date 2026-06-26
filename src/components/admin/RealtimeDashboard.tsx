@@ -2,7 +2,10 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Wifi, WifiOff } from "lucide-react";
+import { ArrowLeft, WifiOff } from "lucide-react";
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+} from "recharts";
 
 /* ── Types ── */
 type CallEntry = {
@@ -25,6 +28,8 @@ type Stats = {
   activeNow: number;
   callsToday: number;
 };
+
+type DayPoint = { date: string; count: number };
 
 /* ── Source meta ── */
 const SOURCE_META: Record<string, { label: string; emoji: string; cls: string }> = {
@@ -106,8 +111,9 @@ function fmtDuration(sec: number | null) {
 
 /* ── Main component ── */
 export function RealtimeDashboard({ lang }: { lang: string }) {
-  const [calls, setCalls]       = useState<CallEntry[]>([]);
-  const [stats, setStats]       = useState<Stats | null>(null);
+  const [calls, setCalls]         = useState<CallEntry[]>([]);
+  const [stats, setStats]         = useState<Stats | null>(null);
+  const [callsPerDay, setCallsPerDay] = useState<DayPoint[]>([]);
   const [connected, setConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [newIds, setNewIds]     = useState<Set<string>>(new Set());
@@ -127,9 +133,10 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
       es = new EventSource("/api/admin/realtime");
 
       es.onmessage = (e) => {
-        const { calls: incoming, stats: s } = JSON.parse(e.data) as {
+        const { calls: incoming, stats: s, callsPerDay: cpd } = JSON.parse(e.data) as {
           calls: CallEntry[];
           stats: Stats;
+          callsPerDay: DayPoint[];
         };
 
         // Detect truly new IDs (not seen in previous batch)
@@ -147,6 +154,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
 
         setCalls(incoming);
         setStats(s);
+        if (cpd) setCallsPerDay(cpd);
         setConnected(true);
         setLastUpdate(new Date());
       };
@@ -226,6 +234,65 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
             sub="queued / active"
             accent={stats && stats.activeNow > 0 ? "text-amber-600" : "text-slate-900"}
           />
+        </div>
+
+        {/* Calls per day chart */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+            <h2 className="text-sm font-semibold text-slate-700">
+              Calls per Day
+              <span className="ml-2 text-xs font-normal text-slate-400">last 30 days</span>
+            </h2>
+            {callsPerDay.length > 0 && (
+              <span className="text-xs text-slate-400">
+                peak {Math.max(...callsPerDay.map((d) => d.count))} calls
+              </span>
+            )}
+          </div>
+          <div className="px-2 py-4 h-52">
+            {callsPerDay.length === 0 ? (
+              <div className="flex h-full items-center justify-center text-sm text-slate-300">
+                Loading…
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={callsPerDay} margin={{ top: 4, right: 16, left: -16, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke="#f1f5f9" />
+                  <XAxis
+                    dataKey="date"
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 10, fill: "#94a3b8" }}
+                    tickFormatter={(v: string) => {
+                      const d = new Date(v + "T00:00:00");
+                      return d.toLocaleDateString([], { month: "short", day: "numeric" });
+                    }}
+                    interval={Math.floor(callsPerDay.length / 6)}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    tick={{ fontSize: 10, fill: "#94a3b8" }}
+                    allowDecimals={false}
+                    width={28}
+                  />
+                  <Tooltip
+                    cursor={{ fill: "#f1f5f9" }}
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e2e8f0" }}
+                    labelFormatter={(v) =>
+                      typeof v === "string"
+                        ? new Date(v + "T00:00:00").toLocaleDateString([], {
+                            weekday: "short", month: "short", day: "numeric",
+                          })
+                        : String(v)
+                    }
+                    formatter={(v) => [v ?? 0, "calls"]}
+                  />
+                  <Bar dataKey="count" fill="#1C78AE" radius={[3, 3, 0, 0]} maxBarSize={28} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </div>
 
         {/* Live feed */}
