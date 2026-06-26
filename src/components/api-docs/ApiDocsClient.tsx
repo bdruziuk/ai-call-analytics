@@ -472,14 +472,21 @@ function WebhookUrlBuilder({
 }) {
   const [apiKey,     setApiKey]     = useState("");
   const [reportType, setReportType] = useState("medium");
+  const [bKey,       setBKey]       = useState("");
+  const [bSecret,    setBSecret]    = useState("");
   const [copied,     setCopied]     = useState(false);
 
+  const isBinotel = endpoint === "binotel";
   const origin =
     typeof window !== "undefined" ? window.location.origin : "https://your-domain.com";
 
-  const webhookUrl = apiKey.startsWith("aca_")
-    ? `${origin}/api/integrations/${endpoint}?key=${apiKey}&reportType=${reportType}`
-    : "";
+  const webhookUrl = (() => {
+    if (!apiKey.startsWith("aca_")) return "";
+    let url = `${origin}/api/integrations/${endpoint}?key=${apiKey}&reportType=${reportType}`;
+    if (isBinotel && bKey.trim())    url += `&bKey=${encodeURIComponent(bKey.trim())}`;
+    if (isBinotel && bSecret.trim()) url += `&bSecret=${encodeURIComponent(bSecret.trim())}`;
+    return url;
+  })();
 
   function copyUrl() {
     if (!webhookUrl) return;
@@ -536,6 +543,36 @@ function WebhookUrlBuilder({
           ))}
         </div>
       </div>
+
+      {/* Binotel API credentials (optional) */}
+      {isBinotel && (
+        <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 space-y-3">
+          <p className="text-xs font-semibold text-amber-800">{d.binotelCredsTitle}</p>
+          <p className="text-xs text-amber-700">{d.binotelBKeyHint}</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label className="mb-1 block text-xs font-medium text-amber-800">{d.binotelCredsKeyLabel}</label>
+              <input
+                type="text"
+                value={bKey}
+                onChange={(e) => setBKey(e.target.value)}
+                placeholder={d.binotelCredsKeyPlaceholder}
+                className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-mono text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs font-medium text-amber-800">{d.binotelCredsSecretLabel}</label>
+              <input
+                type="text"
+                value={bSecret}
+                onChange={(e) => setBSecret(e.target.value)}
+                placeholder={d.binotelCredsSecretPlaceholder}
+                className="w-full rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-mono text-slate-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Generated URL */}
       {webhookUrl ? (
@@ -660,6 +697,10 @@ function IntegrationTabContent({
           params={[
             { name: "key",        type: d.integrationParamKeyType,    desc: d.integrationParamKeyDesc },
             { name: "reportType", type: d.integrationParamReportType, desc: d.paramReportTypeDesc },
+            ...(cfg.endpoint === "binotel" ? [
+              { name: "bKey",    type: d.binotelParamBKeyType,    desc: d.binotelParamBKeyDesc },
+              { name: "bSecret", type: d.binotelParamBSecretType, desc: d.binotelParamBSecretDesc },
+            ] : []),
           ]}
           d={d}
         />
