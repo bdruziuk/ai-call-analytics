@@ -3,10 +3,32 @@ import { validateApiKeyFromString } from "@/lib/apiAuth";
 import { downloadAndQueueRecording, VALID_REPORT_TYPES } from "@/lib/integrationHelper";
 import { logApiRequest } from "@/lib/apiLog";
 
+async function getBinotelRecordingUrl(
+  bKey: string,
+  bSecret: string,
+  generalCallID: string,
+): Promise<string | null> {
+  try {
+    const res = await fetch("https://api.binotel.com/api/4.0/stats/call-record-link.json", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: bKey, secret: bSecret, generalCallID }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as Record<string, unknown>;
+    // Binotel returns { status: "success", recordLink: "https://..." }
+    return typeof data.recordLink === "string" ? data.recordLink : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
   const { searchParams } = new URL(request.url);
   const key        = searchParams.get("key") ?? "";
   const reportType = searchParams.get("reportType") ?? "medium";
+  const bKey       = searchParams.get("bKey") ?? "";
+  const bSecret    = searchParams.get("bSecret") ?? "";
 
   const auth = await validateApiKeyFromString(key);
   if (!auth) return NextResponse.json({ error: "Invalid or missing API key" }, { status: 401 });
@@ -29,9 +51,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to parse request body" }, { status: 400 });
   }
 
-  const requestType    = String(body.requestType ?? "");
+  const requestType     = String(body.requestType ?? "");
   const recordingStatus = String(body["callDetails[recordingStatus]"] ?? "").toLowerCase();
-  const disposition    = String(body["callDetails[disposition]"] ?? body.disposition ?? "").toUpperCase();
+  const disposition     = String(body["callDetails[disposition]"] ?? body.disposition ?? "").toUpperCase();
+  const generalCallID   = String(body["callDetails[generalCallID]"] ?? body.generalCallID ?? "");
 
   // Skip non-answered calls
   if (disposition && disposition !== "ANSWER" && disposition !== "ANSWERED") {
@@ -46,18 +69,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "recording still uploading, please retry" }, { status: 503 });
   }
 
-  // Once recordingStatus=uploaded, use the generateFile portal link to download the MP3.
-  const recordingUrl = String(
-    body["callDetails[file]"] ??
-    body["callDetails[record_url]"] ??
-    body["callDetails[recording_url]"] ??
-    body["callDetails[generatedFileLink]"] ??
-    body["callDetails[fileLink]"] ??
-    body["callDetails[linkToCallRecordInMyBusiness]"] ??
-    body.file ?? body.file_url ?? body.record_url ?? body.recording_url ?? ""
-  );
+  // Resolve the recording URL.
+  // If Binotel API credentials are provided in the webhook URL (?bKey=...&bSecret=...),
+  // use the Binotel API to get a real signed download link.
+  // Otherwise fall back to the portal URL (which may require auth and return HTML).
+  let recordingUrl = "";
 
-  console.log("[binotel] requestType:", requestType, "recordingStatus:", recordingStatus, "recordingUrl:", recordingUrl);
+  if (bKey && bSecret && generalCallID) {
+    const apiUrl = await getBinotelRecordingUrl(bKey, bSecret, generalCallID);
+    if (apiUrl) {
+      recordingUrl = apiUrl;
+      console.log("[binotel] resolved via API:", recordingUrl);
+    } else {
+      console.warn("[binotel] API returned no recordLink for generalCallID:", generalCallID);
+    }
+  }
+
+  if (!recordingUrl) {
+    recordingUrl = String(
+      body["callDetails[file]"] ??
+      body["callDetails[record_url]"] ??
+      body["callDetails[recording_url]"] ??
+      body["callDetails[generatedFileLink]"] ??
+      body["callDetails[fileLink]"] ??
+      body["callDetails[linkToCallRecordInMyBusiness]"] ??
+      body.file ?? body.file_url ?? body.record_url ?? body.recording_url ?? ""
+    );
+  }
+
+  console.log("[binotel] requestType:", requestType, "recordingStatus:", recordingStatus, "generalCallID:", generalCallID, "recordingUrl:", recordingUrl);
 
   if (!recordingUrl) {
     logApiRequest(auth.userId, "binotel", "no_recording", 400);
