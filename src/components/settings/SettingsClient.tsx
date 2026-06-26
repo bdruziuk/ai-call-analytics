@@ -331,7 +331,7 @@ export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentSt
       />
 
       {/* ── Integration Setup card ─────────────────────────────────────── */}
-      <IntegrationSetupSection apiKeys={apiKeys} binotelKey={binotelKey ?? null} binotelSecret={binotelSecret ?? null} />
+      <IntegrationSetupSection apiKeys={apiKeys} binotelKey={binotelKey ?? null} binotelSecret={binotelSecret ?? null} t={t} />
 
       {/* ── Consent card ──────────────────────────────────────────────── */}
       {consent && (
