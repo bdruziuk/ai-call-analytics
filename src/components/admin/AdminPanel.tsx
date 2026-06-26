@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useCallback, Fragment } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ChevronDown, ChevronRight, RefreshCw, Shield,
   Users, PhoneCall, CheckCircle2, XCircle, Loader2,
-  Clock, User, Search, Wifi, Trash2, UserPlus, X, Key, Activity,
+  Clock, User, Search, Wifi, Trash2, UserPlus, X, Key, Activity, Radio,
 } from "lucide-react";
 import type ukDict from "@/dictionaries/uk.json";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
@@ -1015,7 +1016,7 @@ function CreateAccountModal({
 
 /* ── Main admin panel ─────────────────────────────────────────────────────── */
 
-export function AdminPanel({ t, initialUsers, initialPromoCodes }: Props) {
+export function AdminPanel({ t, lang, initialUsers, initialPromoCodes }: Props) {
   const router = useRouter();
   const locale = t.dateLocale;
 
@@ -1115,6 +1116,15 @@ export function AdminPanel({ t, initialUsers, initialPromoCodes }: Props) {
           <span className="hidden text-xs text-slate-400 sm:block" suppressHydrationWarning>
             {lastRefresh.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
           </span>
+
+          {/* Realtime dashboard link */}
+          <Link
+            href={`/${lang}/admin/realtime`}
+            className="inline-flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 shadow-sm transition hover:bg-emerald-100 md:px-4"
+          >
+            <Radio size={14} className="animate-pulse" />
+            <span className="hidden sm:inline">Realtime</span>
+          </Link>
 
           {/* Create account */}
           <button
