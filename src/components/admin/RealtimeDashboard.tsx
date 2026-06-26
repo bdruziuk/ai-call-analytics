@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { ArrowLeft, WifiOff } from "lucide-react";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, Dot,
 } from "recharts";
 
 /* ── Types ── */
@@ -308,7 +308,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                 <div className="flex h-full items-center justify-center text-xs text-slate-300">Loading…</div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={callsPerDay} margin={{ top: 2, right: 12, left: -18, bottom: 0 }} barCategoryGap="30%">
+                  <LineChart data={callsPerDay} margin={{ top: 6, right: 12, left: -18, bottom: 0 }}>
                     <CartesianGrid vertical={false} stroke="#f1f5f9" />
                     <XAxis
                       dataKey="label"
@@ -318,7 +318,6 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                     />
                     <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: "#94a3b8" }} allowDecimals={false} width={24} />
                     <Tooltip
-                      cursor={{ fill: "#f1f5f9" }}
                       contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #e2e8f0" }}
                       labelFormatter={(v) => String(v)}
                       formatter={(v, name) => [v ?? 0, name === "count" ? "Calls" : "API requests"]}
@@ -331,9 +330,19 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                         </span>
                       )}
                     />
-                    <Bar dataKey="count" name="count" fill="#1C78AE" radius={[3, 3, 0, 0]} maxBarSize={12} />
-                    <Bar dataKey="api"   name="api"   fill="#f59e0b" radius={[3, 3, 0, 0]} maxBarSize={12} />
-                  </BarChart>
+                    <Line
+                      dataKey="count" name="count"
+                      stroke="#1C78AE" strokeWidth={2}
+                      dot={<Dot r={3} fill="#1C78AE" stroke="#fff" strokeWidth={1} />}
+                      activeDot={{ r: 5 }}
+                    />
+                    <Line
+                      dataKey="api" name="api"
+                      stroke="#f59e0b" strokeWidth={2}
+                      dot={<Dot r={3} fill="#f59e0b" stroke="#fff" strokeWidth={1} />}
+                      activeDot={{ r: 5 }}
+                    />
+                  </LineChart>
                 </ResponsiveContainer>
               )}
             </div>
