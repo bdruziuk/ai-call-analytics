@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     body.file ?? body.file_url ?? body.record_url ?? body.recording_url ?? ""
   );
 
-  console.log("[binotel] requestType:", requestType, "recordingStatus:", recordingStatus, "recordingUrl:", recordingUrl);
+  console.log("[binotel] requestType:", requestType, "recordingStatus:", recordingStatus, "recordingUrl:", recordingUrl, "body:", JSON.stringify(body));
 
   if (!recordingUrl) {
     logApiRequest(auth.userId, "binotel", "no_recording", 400);
