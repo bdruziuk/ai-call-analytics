@@ -88,24 +88,24 @@ export async function GET(request: Request) {
               }),
             ]);
 
-          // Build hour → count map (0–23) for today
-          const currentHour = new Date().getHours();
-          const hourMap:    number[] = Array(currentHour + 1).fill(0);
-          const apiHourMap: number[] = Array(currentHour + 1).fill(0);
+          // Build hour → count map (7–22) for today
+          const START_HOUR = 7;
+          const END_HOUR   = 22;
+          const hourMap:    Record<number, number> = {};
+          const apiHourMap: Record<number, number> = {};
+          for (let h = START_HOUR; h <= END_HOUR; h++) { hourMap[h] = 0; apiHourMap[h] = 0; }
           for (const { createdAt } of callsTodayRaw) {
             const h = createdAt.getHours();
-            if (h <= currentHour) hourMap[h]++;
+            if (h >= START_HOUR && h <= END_HOUR) hourMap[h]++;
           }
           for (const { createdAt } of apiTodayRaw) {
             const h = createdAt.getHours();
-            if (h <= currentHour) apiHourMap[h]++;
+            if (h >= START_HOUR && h <= END_HOUR) apiHourMap[h]++;
           }
-          const callsPerDay = hourMap.map((count, h) => ({
-            hour: h,
-            label: `${String(h).padStart(2, "0")}:00`,
-            count,
-            api: apiHourMap[h] ?? 0,
-          }));
+          const callsPerDay = Object.keys(hourMap).map((k) => {
+            const h = Number(k);
+            return { hour: h, label: `${String(h).padStart(2, "0")}:00`, count: hourMap[h], api: apiHourMap[h] };
+          });
 
           send({
             calls: recentCalls.map((c) => ({
