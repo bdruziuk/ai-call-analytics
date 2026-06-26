@@ -3,39 +3,6 @@ import { validateApiKeyFromString } from "@/lib/apiAuth";
 import { downloadAndQueueRecording, VALID_REPORT_TYPES } from "@/lib/integrationHelper";
 import { logApiRequest } from "@/lib/apiLog";
 
-/**
- * Fetch the direct MP3 download URL from Binotel's REST API.
- * Requires BINOTEL_KEY and BINOTEL_SECRET env vars.
- * Docs: https://api.binotel.ua/api/4.0/calls/call-records
- */
-async function getBinotelRecordingUrl(generalCallID: string): Promise<string | null> {
-  const key    = process.env.BINOTEL_KEY;
-  const secret = process.env.BINOTEL_SECRET;
-  if (!key || !secret) return null;
-
-  const res = await fetch("https://api.binotel.ua/api/4.0/calls/call-records.json", {
-    method:  "POST",
-    headers: { "Content-Type": "application/json" },
-    body:    JSON.stringify({ key, secret, generalCallID }),
-  });
-
-  if (!res.ok) {
-    console.error("[binotel] call-records API error:", res.status, await res.text());
-    return null;
-  }
-
-  const data = await res.json() as Record<string, unknown>;
-  console.log("[binotel] call-records API response:", JSON.stringify(data));
-
-  // Response shape: { data: { generatedFileLink: "https://..." } }
-  const link = (data?.data as Record<string, unknown>)?.generatedFileLink
-    ?? (data?.data as Record<string, unknown>)?.fileLink
-    ?? data?.generatedFileLink
-    ?? null;
-
-  return link ? String(link) : null;
-}
-
 export async function POST(request: Request) {
   const { searchParams } = new URL(request.url);
   const key        = searchParams.get("key") ?? "";
@@ -62,48 +29,35 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to parse request body" }, { status: 400 });
   }
 
-  // Binotel sends flat bracket-notation keys: callDetails[disposition], callDetails[generalCallID], etc.
-  const disposition = String(
-    body["callDetails[disposition]"] ?? body.disposition ?? ""
-  ).toUpperCase();
+  const requestType    = String(body.requestType ?? "");
+  const recordingStatus = String(body["callDetails[recordingStatus]"] ?? "").toLowerCase();
+  const disposition    = String(body["callDetails[disposition]"] ?? body.disposition ?? "").toUpperCase();
 
+  // Skip non-answered calls
   if (disposition && disposition !== "ANSWER" && disposition !== "ANSWERED") {
     logApiRequest(auth.userId, "binotel", "skipped", 200);
     return NextResponse.json({ skipped: true, reason: `call disposition is ${disposition}` });
   }
 
-  const generalCallID = String(body["callDetails[generalCallID]"] ?? body["callDetails[callID]"] ?? "");
-  const recordingStatus = String(body["callDetails[recordingStatus]"] ?? "").toLowerCase();
-
-  // Try to get the direct recording URL from Binotel's API using generalCallID
-  let recordingUrl = "";
-
-  if (generalCallID && (process.env.BINOTEL_KEY || process.env.BINOTEL_SECRET)) {
-    const apiUrl = await getBinotelRecordingUrl(generalCallID);
-    if (apiUrl) {
-      recordingUrl = apiUrl;
-    } else if (recordingStatus === "uploading") {
-      // Recording not ready yet — tell Binotel to retry
-      logApiRequest(auth.userId, "binotel", "skipped", 503);
-      return NextResponse.json({ error: "recording not ready, please retry" }, { status: 503 });
-    }
+  // apiCallCompleted fires immediately when the call ends — recording may still be uploading.
+  // Binotel sends a separate apiCallRecordCompleted event once the file is ready.
+  // Skip the first event; handle the second one below.
+  if (requestType === "apiCallCompleted" && recordingStatus === "uploading") {
+    logApiRequest(auth.userId, "binotel", "skipped", 200);
+    return NextResponse.json({ skipped: true, reason: "waiting for apiCallRecordCompleted" });
   }
 
-  // Fallback: use URL fields from the payload (including portal link as last resort)
-  if (!recordingUrl) {
-    recordingUrl = String(
-      body["callDetails[file]"] ??
-      body["callDetails[record_url]"] ??
-      body["callDetails[linkToCallRecordInMyBusiness]"] ??
-      body.file ?? body.file_url ?? body.record_url ?? body.recording_url ?? ""
-    );
-  }
+  // Extract recording URL — apiCallRecordCompleted should include a direct file link
+  const recordingUrl = String(
+    body["callDetails[file]"] ??
+    body["callDetails[record_url]"] ??
+    body["callDetails[recording_url]"] ??
+    body["callDetails[generatedFileLink]"] ??
+    body["callDetails[fileLink]"] ??
+    body.file ?? body.file_url ?? body.record_url ?? body.recording_url ?? ""
+  );
 
-  // If still uploading and no usable URL, ask Binotel to retry
-  if (!recordingUrl && recordingStatus === "uploading") {
-    logApiRequest(auth.userId, "binotel", "skipped", 503);
-    return NextResponse.json({ error: "recording not ready, please retry" }, { status: 503 });
-  }
+  console.log("[binotel] requestType:", requestType, "recordingStatus:", recordingStatus, "recordingUrl:", recordingUrl);
 
   if (!recordingUrl) {
     logApiRequest(auth.userId, "binotel", "no_recording", 400);
@@ -116,12 +70,11 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (err) {
     console.error("[POST /api/integrations/binotel]", err);
-    logApiRequest(auth.userId, "binotel", "error", 502);
     if (err instanceof Error && err.message.startsWith("HTTP_CONTENT")) {
-      // Got HTML/redirect instead of audio — recording not ready yet, ask Binotel to retry
       logApiRequest(auth.userId, "binotel", "skipped", 503);
       return NextResponse.json({ error: "recording not ready, please retry" }, { status: 503 });
     }
+    logApiRequest(auth.userId, "binotel", "error", 502);
     if (err instanceof Error && err.message.startsWith("HTTP"))
       return NextResponse.json({ error: `Failed to download recording: ${err.message}` }, { status: 502 });
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
