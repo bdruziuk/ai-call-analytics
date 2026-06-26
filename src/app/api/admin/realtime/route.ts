@@ -42,7 +42,7 @@ export async function GET(request: Request) {
           const thirtyDaysAgo = new Date(todayStart);
           thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
 
-          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday, chartRaw] =
+          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday, chartRaw, apiLogs] =
             await Promise.all([
               db.call.findMany({
                 orderBy: { createdAt: "desc" },
@@ -71,6 +71,19 @@ export async function GET(request: Request) {
                 where: { createdAt: { gte: thirtyDaysAgo } },
                 select: { createdAt: true },
                 orderBy: { createdAt: "asc" },
+              }),
+              // Last 100 API logs across all users
+              db.apiLog.findMany({
+                orderBy: { createdAt: "desc" },
+                take: 100,
+                select: {
+                  id: true,
+                  endpoint: true,
+                  status: true,
+                  statusCode: true,
+                  createdAt: true,
+                  userId: true,
+                },
               }),
             ]);
 
@@ -108,6 +121,14 @@ export async function GET(request: Request) {
               callsToday,
             },
             callsPerDay,
+            apiLogs: apiLogs.map((l) => ({
+              id: l.id,
+              endpoint: l.endpoint,
+              status: l.status,
+              statusCode: l.statusCode,
+              userId: l.userId,
+              createdAt: l.createdAt.toISOString(),
+            })),
           });
         } catch (err) {
           console.error("[realtime]", err);

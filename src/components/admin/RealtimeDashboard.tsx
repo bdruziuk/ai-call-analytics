@@ -31,6 +31,15 @@ type Stats = {
 
 type DayPoint = { date: string; count: number };
 
+type ApiLogEntry = {
+  id: string;
+  endpoint: string;
+  status: string;
+  statusCode: number;
+  userId: string;
+  createdAt: string;
+};
+
 /* ── Source meta ── */
 const SOURCE_META: Record<string, { label: string; emoji: string; cls: string }> = {
   manual:    { label: "Manual",    emoji: "⬆️", cls: "bg-slate-100 text-slate-600" },
@@ -114,6 +123,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
   const [calls, setCalls]         = useState<CallEntry[]>([]);
   const [stats, setStats]         = useState<Stats | null>(null);
   const [callsPerDay, setCallsPerDay] = useState<DayPoint[]>([]);
+  const [apiLogs, setApiLogs]     = useState<ApiLogEntry[]>([]);
   const [connected, setConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [newIds, setNewIds]     = useState<Set<string>>(new Set());
@@ -133,10 +143,11 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
       es = new EventSource("/api/admin/realtime");
 
       es.onmessage = (e) => {
-        const { calls: incoming, stats: s, callsPerDay: cpd } = JSON.parse(e.data) as {
+        const { calls: incoming, stats: s, callsPerDay: cpd, apiLogs: al } = JSON.parse(e.data) as {
           calls: CallEntry[];
           stats: Stats;
           callsPerDay: DayPoint[];
+          apiLogs: ApiLogEntry[];
         };
 
         // Detect truly new IDs (not seen in previous batch)
@@ -155,6 +166,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
         setCalls(incoming);
         setStats(s);
         if (cpd) setCallsPerDay(cpd);
+        if (al) setApiLogs(al);
         setConnected(true);
         setLastUpdate(new Date());
       };
@@ -292,6 +304,97 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                 </BarChart>
               </ResponsiveContainer>
             )}
+          </div>
+        </div>
+
+        {/* API Requests panel */}
+        <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3">
+            <h2 className="text-sm font-semibold text-slate-700">
+              API Requests
+              <span className="ml-2 text-xs font-normal text-slate-400">last 100</span>
+            </h2>
+            <span className="text-xs text-slate-400">{apiLogs.length} records</span>
+          </div>
+
+          {/* Desktop table */}
+          <div className="hidden md:block overflow-x-auto max-h-72 overflow-y-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="sticky top-0 z-10">
+                <tr className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  <th className="px-4 py-2.5 w-36">Time</th>
+                  <th className="px-4 py-2.5 w-32">Endpoint</th>
+                  <th className="px-4 py-2.5 w-24">Status</th>
+                  <th className="px-4 py-2.5 w-20">Code</th>
+                  <th className="px-4 py-2.5">User ID</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50 font-mono">
+                {apiLogs.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-4 py-8 text-center text-slate-300 font-sans">
+                      No API requests yet
+                    </td>
+                  </tr>
+                )}
+                {apiLogs.map((log) => {
+                  const isOk = log.statusCode >= 200 && log.statusCode < 300;
+                  const isWarn = log.statusCode >= 400 && log.statusCode < 500;
+                  const isErr = log.statusCode >= 500;
+                  const codeCls = isErr ? "text-red-600 bg-red-50" : isWarn ? "text-amber-600 bg-amber-50" : "text-emerald-700 bg-emerald-50";
+                  const statusCls = log.status === "success" ? "text-emerald-600" : log.status === "error" ? "text-red-500" : log.status === "skipped" ? "text-slate-400" : "text-amber-600";
+                  return (
+                    <tr key={log.id} className="hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-2 text-xs text-slate-400 whitespace-nowrap">
+                        <div>{formatTime(log.createdAt)}</div>
+                        <div className="text-[10px] text-slate-300">{formatDate(log.createdAt)}</div>
+                      </td>
+                      <td className="px-4 py-2 text-xs text-slate-700 font-semibold capitalize">
+                        {log.endpoint}
+                      </td>
+                      <td className={`px-4 py-2 text-xs font-semibold ${statusCls}`}>
+                        {log.status}
+                      </td>
+                      <td className="px-4 py-2">
+                        <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-bold ${codeCls}`}>
+                          {log.statusCode}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 text-[11px] text-slate-400 truncate max-w-[160px]">
+                        {log.userId}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile */}
+          <div className="md:hidden divide-y divide-slate-100 max-h-72 overflow-y-auto">
+            {apiLogs.length === 0 && (
+              <p className="px-4 py-8 text-center text-sm text-slate-300">No API requests yet</p>
+            )}
+            {apiLogs.map((log) => {
+              const isErr = log.statusCode >= 500;
+              const isWarn = log.statusCode >= 400 && log.statusCode < 500;
+              const codeCls = isErr ? "text-red-600 bg-red-50" : isWarn ? "text-amber-600 bg-amber-50" : "text-emerald-700 bg-emerald-50";
+              const statusCls = log.status === "success" ? "text-emerald-600" : log.status === "error" ? "text-red-500" : log.status === "skipped" ? "text-slate-400" : "text-amber-600";
+              return (
+                <div key={log.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <span className={`shrink-0 inline-block rounded px-1.5 py-0.5 text-xs font-bold font-mono ${codeCls}`}>
+                    {log.statusCode}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-slate-700 capitalize">{log.endpoint}</span>
+                      <span className={`text-[10px] font-semibold ${statusCls}`}>{log.status}</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-mono">{formatTime(log.createdAt)}</div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
