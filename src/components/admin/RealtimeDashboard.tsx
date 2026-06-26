@@ -111,6 +111,82 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
+const PAGE_SIZE = 10;
+
+function Paginator({
+  page, total, pageSize, onChange,
+}: {
+  page: number; total: number; pageSize: number; onChange: (p: number) => void;
+}) {
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  if (pages <= 1) return null;
+
+  const from = (page - 1) * pageSize + 1;
+  const to   = Math.min(page * pageSize, total);
+
+  return (
+    <div className="flex items-center justify-between border-t border-slate-100 px-4 py-2.5">
+      <span className="text-xs text-slate-400">
+        {from}–{to} of {total}
+      </span>
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => onChange(1)}
+          disabled={page === 1}
+          className="rounded px-1.5 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-default"
+        >
+          «
+        </button>
+        <button
+          onClick={() => onChange(page - 1)}
+          disabled={page === 1}
+          className="rounded px-1.5 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-default"
+        >
+          ‹
+        </button>
+        {Array.from({ length: pages }, (_, i) => i + 1)
+          .filter((p) => p === 1 || p === pages || Math.abs(p - page) <= 1)
+          .reduce<(number | "…")[]>((acc, p, i, arr) => {
+            if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push("…");
+            acc.push(p);
+            return acc;
+          }, [])
+          .map((p, i) =>
+            p === "…" ? (
+              <span key={`e${i}`} className="px-1 text-xs text-slate-300">…</span>
+            ) : (
+              <button
+                key={p}
+                onClick={() => onChange(p)}
+                className={`min-w-[26px] rounded px-1.5 py-1 text-xs font-medium transition-colors ${
+                  p === page
+                    ? "bg-brand-600 text-white"
+                    : "text-slate-500 hover:bg-slate-100"
+                }`}
+              >
+                {p}
+              </button>
+            )
+          )}
+        <button
+          onClick={() => onChange(page + 1)}
+          disabled={page === pages}
+          className="rounded px-1.5 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-default"
+        >
+          ›
+        </button>
+        <button
+          onClick={() => onChange(pages)}
+          disabled={page === pages}
+          className="rounded px-1.5 py-1 text-xs text-slate-500 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-default"
+        >
+          »
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function fmtDuration(sec: number | null) {
   if (!sec) return null;
   const m = Math.floor(sec / 60);
@@ -124,6 +200,8 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
   const [stats, setStats]         = useState<Stats | null>(null);
   const [callsPerDay, setCallsPerDay] = useState<DayPoint[]>([]);
   const [apiLogs, setApiLogs]     = useState<ApiLogEntry[]>([]);
+  const [callsPage, setCallsPage] = useState(1);
+  const [apiPage, setApiPage]     = useState(1);
   const [connected, setConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [newIds, setNewIds]     = useState<Set<string>>(new Set());
@@ -166,7 +244,11 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
         setCalls(incoming);
         setStats(s);
         if (cpd) setCallsPerDay(cpd);
-        if (al) setApiLogs(al);
+        if (al) {
+          setApiLogs(al);
+          setApiPage((p) => (p > Math.ceil(al.length / PAGE_SIZE) ? 1 : p));
+        }
+        setCallsPage((p) => (p > Math.ceil(incoming.length / PAGE_SIZE) ? 1 : p));
         setConnected(true);
         setLastUpdate(new Date());
       };
@@ -183,6 +265,9 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
   }, []);
 
   const secAgo = lastUpdate ? Math.round((Date.now() - lastUpdate.getTime()) / 1000) : null;
+
+  const callsSlice  = calls.slice((callsPage - 1) * PAGE_SIZE, callsPage * PAGE_SIZE);
+  const apiSlice    = apiLogs.slice((apiPage - 1) * PAGE_SIZE, apiPage * PAGE_SIZE);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -328,9 +413,9 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
           </div>
 
           {/* Desktop table */}
-          <div className="hidden md:block overflow-x-auto max-h-72 overflow-y-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="sticky top-0 z-10">
+              <thead>
                 <tr className="border-b border-slate-100 bg-slate-50 text-xs font-semibold uppercase tracking-wide text-slate-400">
                   <th className="px-4 py-2.5 w-36">Time</th>
                   <th className="px-4 py-2.5 w-32">Endpoint</th>
@@ -347,11 +432,10 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                     </td>
                   </tr>
                 )}
-                {apiLogs.map((log) => {
-                  const isOk = log.statusCode >= 200 && log.statusCode < 300;
+                {apiSlice.map((log) => {
                   const isWarn = log.statusCode >= 400 && log.statusCode < 500;
-                  const isErr = log.statusCode >= 500;
-                  const codeCls = isErr ? "text-red-600 bg-red-50" : isWarn ? "text-amber-600 bg-amber-50" : "text-emerald-700 bg-emerald-50";
+                  const isErr  = log.statusCode >= 500;
+                  const codeCls   = isErr ? "text-red-600 bg-red-50" : isWarn ? "text-amber-600 bg-amber-50" : "text-emerald-700 bg-emerald-50";
                   const statusCls = log.status === "success" ? "text-emerald-600" : log.status === "error" ? "text-red-500" : log.status === "skipped" ? "text-slate-400" : "text-amber-600";
                   return (
                     <tr key={log.id} className="hover:bg-slate-50 transition-colors">
@@ -359,20 +443,14 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                         <div>{formatTime(log.createdAt)}</div>
                         <div className="text-[10px] text-slate-300">{formatDate(log.createdAt)}</div>
                       </td>
-                      <td className="px-4 py-2 text-xs text-slate-700 font-semibold capitalize">
-                        {log.endpoint}
-                      </td>
-                      <td className={`px-4 py-2 text-xs font-semibold ${statusCls}`}>
-                        {log.status}
-                      </td>
+                      <td className="px-4 py-2 text-xs text-slate-700 font-semibold capitalize">{log.endpoint}</td>
+                      <td className={`px-4 py-2 text-xs font-semibold ${statusCls}`}>{log.status}</td>
                       <td className="px-4 py-2">
                         <span className={`inline-block rounded px-1.5 py-0.5 text-xs font-bold ${codeCls}`}>
                           {log.statusCode}
                         </span>
                       </td>
-                      <td className="px-4 py-2 text-[11px] text-slate-400 truncate max-w-[160px]">
-                        {log.userId}
-                      </td>
+                      <td className="px-4 py-2 text-[11px] text-slate-400 truncate max-w-[160px]">{log.userId}</td>
                     </tr>
                   );
                 })}
@@ -381,14 +459,14 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
           </div>
 
           {/* Mobile */}
-          <div className="md:hidden divide-y divide-slate-100 max-h-72 overflow-y-auto">
+          <div className="md:hidden divide-y divide-slate-100">
             {apiLogs.length === 0 && (
               <p className="px-4 py-8 text-center text-sm text-slate-300">No API requests yet</p>
             )}
-            {apiLogs.map((log) => {
-              const isErr = log.statusCode >= 500;
+            {apiSlice.map((log) => {
+              const isErr  = log.statusCode >= 500;
               const isWarn = log.statusCode >= 400 && log.statusCode < 500;
-              const codeCls = isErr ? "text-red-600 bg-red-50" : isWarn ? "text-amber-600 bg-amber-50" : "text-emerald-700 bg-emerald-50";
+              const codeCls   = isErr ? "text-red-600 bg-red-50" : isWarn ? "text-amber-600 bg-amber-50" : "text-emerald-700 bg-emerald-50";
               const statusCls = log.status === "success" ? "text-emerald-600" : log.status === "error" ? "text-red-500" : log.status === "skipped" ? "text-slate-400" : "text-amber-600";
               return (
                 <div key={log.id} className="flex items-center gap-3 px-4 py-2.5">
@@ -406,6 +484,8 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
               );
             })}
           </div>
+
+          <Paginator page={apiPage} total={apiLogs.length} pageSize={PAGE_SIZE} onChange={setApiPage} />
         </div>
 
         {/* Live feed */}
@@ -441,7 +521,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                     </td>
                   </tr>
                 )}
-                {calls.map((c) => {
+                {callsSlice.map((c) => {
                   const isNew = newIds.has(c.id);
                   const statusCls = STATUS_CLS[c.status] ?? "bg-slate-100 text-slate-600";
                   const dur = fmtDuration(c.durationSeconds);
@@ -463,12 +543,8 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                           {c.fileName}
                         </Link>
                       </td>
-                      <td className="px-4 py-2.5">
-                        <SourceBadge source={c.source} />
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-slate-500">
-                        {REPORT_LABELS[c.reportType] ?? c.reportType}
-                      </td>
+                      <td className="px-4 py-2.5"><SourceBadge source={c.source} /></td>
+                      <td className="px-4 py-2.5 text-xs text-slate-500">{REPORT_LABELS[c.reportType] ?? c.reportType}</td>
                       <td className="px-4 py-2.5">
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusCls}`}>
                           <StatusDot status={c.status} />
@@ -478,8 +554,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                       <td className="px-4 py-2.5 text-sm font-semibold">
                         {c.score !== null
                           ? <span className="text-brand-600">{c.score}<span className="text-xs font-normal text-slate-400">/10</span></span>
-                          : <span className="text-slate-300">—</span>
-                        }
+                          : <span className="text-slate-300">—</span>}
                       </td>
                       <td className="px-4 py-2.5 text-xs text-slate-500 font-mono">
                         {dur ?? <span className="text-slate-300">—</span>}
@@ -488,9 +563,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                         <div className="truncate" title={c.userEmail ?? undefined}>
                           {c.userEmail ?? <span className="text-slate-300">—</span>}
                         </div>
-                        {c.userName && (
-                          <div className="truncate text-[10px] text-slate-400">{c.userName}</div>
-                        )}
+                        {c.userName && <div className="truncate text-[10px] text-slate-400">{c.userName}</div>}
                       </td>
                     </tr>
                   );
@@ -504,7 +577,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
             {calls.length === 0 && (
               <p className="px-4 py-12 text-center text-sm text-slate-400">Waiting for data…</p>
             )}
-            {calls.map((c) => {
+            {callsSlice.map((c) => {
               const isNew = newIds.has(c.id);
               const statusCls = STATUS_CLS[c.status] ?? "bg-slate-100 text-slate-600";
               const dur = fmtDuration(c.durationSeconds);
@@ -524,18 +597,16 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                       <StatusDot status={c.status} />
                       {c.status}
                     </span>
-                    {c.score !== null && (
-                      <span className="text-xs font-semibold text-brand-600">{c.score}/10</span>
-                    )}
+                    {c.score !== null && <span className="text-xs font-semibold text-brand-600">{c.score}/10</span>}
                     {dur && <span className="text-[10px] text-slate-400 font-mono">{dur}</span>}
                   </div>
-                  {c.userEmail && (
-                    <p className="mt-0.5 truncate text-[11px] text-slate-400">{c.userEmail}</p>
-                  )}
+                  {c.userEmail && <p className="mt-0.5 truncate text-[11px] text-slate-400">{c.userEmail}</p>}
                 </Link>
               );
             })}
           </div>
+
+          <Paginator page={callsPage} total={calls.length} pageSize={PAGE_SIZE} onChange={setCallsPage} />
         </div>
       </div>
     </div>
