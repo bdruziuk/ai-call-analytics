@@ -40,20 +40,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ skipped: true, reason: `call disposition is ${disposition}` });
   }
 
-  // recordingStatus=uploading means the file isn't ready — return 503 so Binotel retries
-  const recordingStatus = String(body["callDetails[recordingStatus]"] ?? "").toLowerCase();
-  if (recordingStatus === "uploading") {
-    logApiRequest(auth.userId, "binotel", "skipped", 503);
-    return NextResponse.json({ error: "recording still uploading, please retry" }, { status: 503 });
-  }
-
   const recordingUrl = String(
     body["callDetails[linkToCallRecordInMyBusiness]"] ??
     body["callDetails[file]"] ??
     body["callDetails[record_url]"] ??
     body.file ?? body.file_url ?? body.record_url ?? body.recording_url ?? ""
   );
+
+  const recordingStatus = String(body["callDetails[recordingStatus]"] ?? "").toLowerCase();
+
+  // No URL at all — nothing to process
   if (!recordingUrl) {
+    // If still uploading, ask Binotel to retry later
+    if (recordingStatus === "uploading") {
+      logApiRequest(auth.userId, "binotel", "skipped", 503);
+      return NextResponse.json({ error: "recording still uploading, please retry" }, { status: 503 });
+    }
     logApiRequest(auth.userId, "binotel", "no_recording", 400);
     return NextResponse.json({ error: "No recording URL in payload" }, { status: 400 });
   }
