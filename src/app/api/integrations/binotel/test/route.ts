@@ -56,11 +56,11 @@ export async function GET() {
 
   return NextResponse.json({
     apiStatus: res.status,
+    rawData: data,
     totalCalls: calls.length,
     firstCall: calls[0] ?? null,
     firstCallWithRecording: withRecording ?? null,
     allFieldNames: calls[0] ? Object.keys(calls[0]) : [],
-    rawDataKeys: Object.keys(data),
     callRecordEndpoint: callRecordResult,
   });
 }
