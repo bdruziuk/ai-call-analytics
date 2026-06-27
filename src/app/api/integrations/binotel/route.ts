@@ -62,7 +62,7 @@ export async function POST(request: Request) {
   console.log("[binotel] generalCallID:", generalCallID, "recordingStatus:", recordingStatus, "disposition:", disposition);
 
   if (disposition && disposition !== "ANSWER" && disposition !== "ANSWERED") {
-    logApiRequest(auth.userId, "binotel", "skipped", 200);
+    logApiRequest(auth.userId, "binotel", "cancelled", 200);
     return NextResponse.json({ skipped: true, reason: `call disposition is ${disposition}` });
   }
 
@@ -79,11 +79,11 @@ export async function POST(request: Request) {
 
   if (existing && existing.status !== "processing") {
     console.log("[binotel] generalCallID:", generalCallID, "already processed (status:", existing.status, ") — skipping");
-    logApiRequest(auth.userId, "binotel", "skipped", 200);
+    logApiRequest(auth.userId, "binotel", "duplicate", 200);
     return NextResponse.json({ skipped: true, reason: "already processed", callId: existing.id });
   }
 
-  // Recording still uploading — mark as processing and ask Binotel to retry
+  // Recording still uploading — upsert processing record and ask Binotel to retry
   if (recordingStatus === "uploading") {
     if (!existing) {
       await db.call.create({
@@ -99,9 +99,13 @@ export async function POST(request: Request) {
       });
       console.log("[binotel] generalCallID:", generalCallID, "— created processing record, waiting for upload");
     } else {
-      console.log("[binotel] generalCallID:", generalCallID, "— still uploading, already tracked");
+      await db.call.update({
+        where: { id: existing.id },
+        data: { processingStartedAt: new Date() },
+      });
+      console.log("[binotel] generalCallID:", generalCallID, "— still uploading, updated processing record");
     }
-    logApiRequest(auth.userId, "binotel", "skipped", 503);
+    logApiRequest(auth.userId, "binotel", "uploading", 503);
     return NextResponse.json({ processing: true, generalCallID }, { status: 503 });
   }
 
@@ -114,7 +118,7 @@ export async function POST(request: Request) {
   const s3Url = await getBinotelS3Url(bKey, bSecret, generalCallID);
   if (!s3Url) {
     console.warn("[binotel] generalCallID:", generalCallID, "— no S3 URL returned, retrying");
-    logApiRequest(auth.userId, "binotel", "skipped", 503);
+    logApiRequest(auth.userId, "binotel", "uploading", 503);
     return NextResponse.json({ error: "recording link not available yet, please retry" }, { status: 503 });
   }
 
@@ -133,7 +137,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("[POST /api/integrations/binotel]", err);
     if (err instanceof Error && err.message.startsWith("HTTP_CONTENT")) {
-      logApiRequest(auth.userId, "binotel", "skipped", 503);
+      logApiRequest(auth.userId, "binotel", "uploading", 503);
       return NextResponse.json({ error: "recording not ready, please retry" }, { status: 503 });
     }
     logApiRequest(auth.userId, "binotel", "error", 502);
