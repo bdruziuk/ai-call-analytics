@@ -101,7 +101,7 @@ export async function POST(request: Request) {
     } else {
       console.log("[binotel] generalCallID:", generalCallID, "— still uploading, already tracked");
     }
-    logApiRequest(auth.userId, "binotel", "processing", 503);
+    logApiRequest(auth.userId, "binotel", "skipped", 503);
     return NextResponse.json({ processing: true, generalCallID }, { status: 503 });
   }
 
