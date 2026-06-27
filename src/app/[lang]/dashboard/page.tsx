@@ -5,6 +5,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { db } from "@/lib/db";
 import { getOrCreateSubscription } from "@/lib/planLimits";
+import { fetchOwnerAnalytics, fetchMarketerAnalytics } from "@/lib/fetchDashboardAnalytics";
 
 type Props = {
   params: Promise<{ lang: string }>;
@@ -29,7 +30,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   });
   if (!dbUserCheck) redirect(`/${lang}/auth/signin`);
 
-  const [t, profiles, sub] = await Promise.all([
+  const [t, profiles, sub, ownerAnalytics, marketerAnalytics] = await Promise.all([
     getDictionary(lang),
     db.salesProfile.findMany({
       where: { userId },
@@ -37,6 +38,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       orderBy: { name: "asc" },
     }),
     getOrCreateSubscription(userId),
+    fetchOwnerAnalytics(userId),
+    fetchMarketerAnalytics(userId),
   ]);
 
   return (
@@ -48,6 +51,8 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       planId={sub.planId}
       isTestAccount={!!dbUserCheck.isTestAccount}
       viewAs={viewAs}
+      ownerAnalytics={ownerAnalytics}
+      marketerAnalytics={marketerAnalytics}
     />
   );
 }

@@ -6,7 +6,7 @@ import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { OwnerDashboard } from "@/components/dashboard/analytics/OwnerDashboard";
 import { MarketerDashboard } from "@/components/dashboard/analytics/MarketerDashboard";
-import { MOCK_OWNER, MOCK_MARKETER } from "@/lib/mock-dashboard-analytics";
+import type { OwnerAnalytics, MarketerAnalytics } from "@/lib/analytics-types";
 import type ukDict from "@/dictionaries/uk.json";
 
 type Dictionary = typeof ukDict;
@@ -41,6 +41,8 @@ type Props = {
   planId: string;
   isTestAccount?: boolean;
   viewAs?: string;
+  ownerAnalytics: OwnerAnalytics;
+  marketerAnalytics: MarketerAnalytics;
 };
 
 type SortKey = "createdAt" | "fileName" | "score" | "status" | "saleStatus" | "product";
@@ -126,7 +128,7 @@ function SaleStatusBadge({ status, label }: { status: string | null; label: stri
 }
 
 /* ── Main component ── */
-export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", planId, isTestAccount = false, viewAs }: Props) {
+export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", planId, isTestAccount = false, viewAs, ownerAnalytics, marketerAnalytics }: Props) {
   // Test accounts bypass all plan restrictions
   const isFree    = !isTestAccount && planId === "free";
   const isStarter = !isTestAccount && planId === "starter";
@@ -378,12 +380,12 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
 
       {/* ── Owner dashboard ── */}
       {activeTab === "owner" && (
-        <OwnerDashboard data={MOCK_OWNER} lang={lang} />
+        <OwnerDashboard data={ownerAnalytics} lang={lang} />
       )}
 
       {/* ── Marketer dashboard ── */}
       {activeTab === "marketer" && (
-        <MarketerDashboard data={MOCK_MARKETER} />
+        <MarketerDashboard data={marketerAnalytics} />
       )}
 
       {/* ── Calls tab (existing functionality) ── */}
