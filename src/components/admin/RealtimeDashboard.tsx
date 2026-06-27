@@ -240,14 +240,13 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
   const callsSlice = calls.slice((callsPage - 1) * PAGE_SIZE, callsPage * PAGE_SIZE);
   const apiSlice   = apiLogs.slice((apiPage - 1) * PAGE_SIZE, apiPage * PAGE_SIZE);
 
-  // Bucket raw timestamps by browser-local hour (7–current, max 22)
+  // Bucket raw timestamps by browser-local hour (0–current hour)
   const chartData = (() => {
     const now           = new Date();
     const localMidnight = new Date(now); localMidnight.setHours(0, 0, 0, 0);
     const currentHour   = now.getHours();
-    const END           = Math.min(22, currentHour);
     const hourMap: Record<number, { count: number; api: number }> = {};
-    for (let h = 7; h <= END; h++) hourMap[h] = { count: 0, api: 0 };
+    for (let h = 0; h <= currentHour; h++) hourMap[h] = { count: 0, api: 0 };
     for (const iso of todayTimestamps.calls) {
       const d = new Date(iso);
       if (d >= localMidnight) { const h = d.getHours(); if (h in hourMap) hourMap[h].count++; }
