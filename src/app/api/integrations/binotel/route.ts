@@ -15,11 +15,13 @@ async function getBinotelRecordingUrl(
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ key: bKey, secret: bSecret, generalCallID }),
     });
-    if (!res.ok) return null;
     const data = (await res.json()) as Record<string, unknown>;
+    console.log("[binotel] call-record-link API response:", JSON.stringify(data).slice(0, 500));
+    if (!res.ok) return null;
     // Binotel returns { status: "success", recordLink: "https://..." }
     return typeof data.recordLink === "string" ? data.recordLink : null;
-  } catch {
+  } catch (err) {
+    console.error("[binotel] call-record-link API error:", err);
     return null;
   }
 }
