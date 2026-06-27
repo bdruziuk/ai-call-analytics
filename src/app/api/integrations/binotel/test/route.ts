@@ -39,21 +39,23 @@ export async function GET() {
     }
   };
 
+  // Use a known real generalCallID from recent webhook logs
+  const testCallId = 6680433722;
+
   const results = await Promise.all([
-    probe("https://api.binotel.com/api/4.0/stats/general-calls-for-period.json", payload),
-    probe("https://api.binotel.com/api/3.0/stats/general-calls-for-period.json", payload),
-    probe("https://api.binotel.com/api/4.0/stats/call-record-link.json", { key: bKey, secret: bSecret, generalCallID: 1 }),
-    probe("https://api.binotel.com/api/4.0/stats/call-record.json", { key: bKey, secret: bSecret, generalCallID: 1 }),
-    probe("https://api.binotel.com/api/4.0/company/get-balance.json", { key: bKey, secret: bSecret }),
+    probe("https://api.binotel.com/api/4.0/stats/call-record.json", { key: bKey, secret: bSecret, generalCallID: testCallId }),
+    probe("https://api.binotel.com/api/4.0/stats/call-record.json", { key: bKey, secret: bSecret, generalCallID: String(testCallId) }),
+    probe("https://api.binotel.com/api/4.0/stats/call-record-link.json", { key: bKey, secret: bSecret, generalCallID: testCallId }),
+    probe("https://api.binotel.com/api/4.0/stats/calls.json", { key: bKey, secret: bSecret, generalCallID: testCallId }),
   ]);
 
   return NextResponse.json({
     credentialsUsed: { bKeyLen: bKey.length, bSecretLen: bSecret.length },
-    "v4/general-calls-for-period": results[0],
-    "v3/general-calls-for-period": results[1],
-    "v4/call-record-link": results[2],
-    "v4/call-record": results[3],
-    "v4/company/get-balance": results[4],
+    testCallId,
+    "call-record(number)": results[0],
+    "call-record(string)": results[1],
+    "call-record-link": results[2],
+    "calls": results[3],
   });
 }
 
