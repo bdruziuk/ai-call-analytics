@@ -12,15 +12,19 @@ export async function GET(request: Request) {
   if (!session?.user?.id) return NextResponse.json({ calls: [], nextCursor: null });
 
   const { searchParams } = new URL(request.url);
-  const cursor = searchParams.get('cursor');   // ISO date of last item in previous page
-  const limit  = Math.min(
+  const cursor  = searchParams.get('cursor');
+  const viewAs  = searchParams.get('viewAs');
+  const limit   = Math.min(
     parseInt(searchParams.get('limit') ?? String(PAGE_SIZE), 10),
     100,
   );
 
+  const { resolveUserId } = await import("@/lib/adminViewAs");
+  const userId = await resolveUserId(session.user.id, session.user.email, viewAs ?? undefined);
+
   const calls = await db.call.findMany({
     where: {
-      userId: session.user.id,
+      userId,
       ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
     },
     orderBy: { createdAt: 'desc' },

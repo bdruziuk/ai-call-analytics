@@ -47,6 +47,7 @@ export default async function DashboardPage({ params, searchParams }: Props) {
       initialManagerFilter={manager ?? ""}
       planId={sub.planId}
       isTestAccount={!!dbUserCheck.isTestAccount}
+      viewAs={viewAs}
     />
   );
 }

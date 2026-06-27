@@ -53,6 +53,7 @@ type Props = {
   data: AnalyticsData | null;
   periodFrom?: string;   // YYYY-MM-DD, from URL
   periodTo?:   string;
+  viewAs?: string;
 };
 
 /* ── Palette ─────────────────────────────────────────────────────────────── */
@@ -75,24 +76,25 @@ function isoDaysAgo(n: number) {
 
 /* ── Period selector ─────────────────────────────────────────────────────── */
 
-type PeriodSelectorProps = {
+type PeriodSelectorProps = { viewAs?: string;
   ta: Dictionary["analytics"];
   lang: string;
   currentFrom?: string;
   currentTo?: string;
 };
 
-function PeriodSelector({ ta, lang, currentFrom, currentTo }: PeriodSelectorProps) {
+function PeriodSelector({ ta, lang, currentFrom, currentTo, viewAs }: PeriodSelectorProps) {
   const router = useRouter();
   const [customFrom, setCustomFrom] = useState(currentFrom ?? "");
   const [customTo,   setCustomTo]   = useState(currentTo   ?? "");
 
   const navigate = useCallback((from?: string, to?: string) => {
     const q = new URLSearchParams();
-    if (from) q.set("from", from);
-    if (to)   q.set("to",   to);
+    if (from)   q.set("from",   from);
+    if (to)     q.set("to",     to);
+    if (viewAs) q.set("viewAs", viewAs);
     router.push(`/${lang}/analytics${q.size ? `?${q}` : ""}`);
-  }, [router, lang]);
+  }, [router, lang, viewAs]);
 
   const presets = [
     { label: ta.periodAll,    from: undefined,        to: undefined        },
@@ -277,7 +279,7 @@ function AISection({ report, t }: { report: AIReport; t: Dictionary["analytics"]
 
 /* ── Main component ──────────────────────────────────────────────────────── */
 
-export function AnalyticsClient({ t, lang, data, periodFrom, periodTo }: Props) {
+export function AnalyticsClient({ t, lang, data, periodFrom, periodTo, viewAs }: Props) {
   const ta = t.analytics;
   const [aiReport, setAiReport]     = useState<AIReport | null>(null);
   const [generating, setGenerating] = useState(false);
@@ -311,7 +313,7 @@ export function AnalyticsClient({ t, lang, data, periodFrom, periodTo }: Props) 
           <h1 className="text-2xl font-bold text-[#0B344E]">{ta.title}</h1>
           <p className="mt-1 text-sm text-slate-500">{ta.subtitle}</p>
         </div>
-        <PeriodSelector ta={ta} lang={lang} currentFrom={periodFrom} currentTo={periodTo} />
+        <PeriodSelector ta={ta} lang={lang} currentFrom={periodFrom} currentTo={periodTo} viewAs={viewAs} />
         <div className="mt-10 flex flex-col items-center gap-3 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-50">
             <TrendingUp size={28} className="text-brand-400" />
@@ -369,7 +371,7 @@ export function AnalyticsClient({ t, lang, data, periodFrom, periodTo }: Props) 
       </div>
 
       {/* Period selector */}
-      <PeriodSelector ta={ta} lang={lang} currentFrom={periodFrom} currentTo={periodTo} />
+      <PeriodSelector ta={ta} lang={lang} currentFrom={periodFrom} currentTo={periodTo} viewAs={viewAs} />
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">

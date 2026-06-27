@@ -40,6 +40,7 @@ type Props = {
   initialManagerFilter?: string;
   planId: string;
   isTestAccount?: boolean;
+  viewAs?: string;
 };
 
 type SortKey = "createdAt" | "fileName" | "score" | "status" | "saleStatus" | "product";
@@ -125,7 +126,7 @@ function SaleStatusBadge({ status, label }: { status: string | null; label: stri
 }
 
 /* ── Main component ── */
-export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", planId, isTestAccount = false }: Props) {
+export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", planId, isTestAccount = false, viewAs }: Props) {
   // Test accounts bypass all plan restrictions
   const isFree    = !isTestAccount && planId === "free";
   const isStarter = !isTestAccount && planId === "starter";
@@ -216,7 +217,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
 
   // Loads the first page and merges into state (preserving older calls already scrolled in).
   async function loadCalls() {
-    const res = await fetch("/api/calls?limit=30", { cache: "no-store" });
+    const res = await fetch(`/api/calls?limit=30${viewAs ? `&viewAs=${viewAs}` : ""}`, { cache: "no-store" });
     if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
     const { calls: fresh, nextCursor: nc }: { calls: CallItem[]; nextCursor: string | null } =
       await res.json();
@@ -232,7 +233,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
     if (!nextCursor || loadingMore) return;
     setLoadingMore(true);
     try {
-      const res = await fetch(`/api/calls?cursor=${encodeURIComponent(nextCursor)}&limit=30`);
+      const res = await fetch(`/api/calls?cursor=${encodeURIComponent(nextCursor)}&limit=30${viewAs ? `&viewAs=${viewAs}` : ""}`);
       if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
       const { calls: more, nextCursor: nc }: { calls: CallItem[]; nextCursor: string | null } =
         await res.json();

@@ -90,6 +90,7 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
         data={null}
         periodFrom={from}
         periodTo={to}
+        viewAs={viewAs}
       />
     );
   }
