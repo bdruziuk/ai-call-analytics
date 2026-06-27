@@ -4,34 +4,33 @@ import { downloadAndQueueRecording, VALID_REPORT_TYPES } from "@/lib/integration
 import { logApiRequest } from "@/lib/apiLog";
 import { db } from "@/lib/db";
 
-async function getBinotelRecordingUrl(
+// Binotel's portal recording URL requires auth. Fetch it with HTTP Basic Auth (key:secret),
+// following redirects. If Binotel redirects to a public CDN/signed URL, return that URL so
+// downloadAndQueueRecording can fetch it directly (without auth). Returns null if no redirect
+// or if the response is HTML (auth failed or recording not ready).
+async function resolveBinotelRedirect(
   bKey: string,
   bSecret: string,
-  generalCallID: string,
+  portalUrl: string,
 ): Promise<string | null> {
-  const callIdNum = Number(generalCallID);
-  const callIdPayload = Number.isFinite(callIdNum) ? callIdNum : generalCallID;
+  if (!portalUrl) return null;
+  const credentials = Buffer.from(`${bKey}:${bSecret}`).toString("base64");
   try {
-    const res = await fetch("https://api.binotel.com/api/4.0/stats/call-record-link.json", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: bKey, secret: bSecret, generalCallID: callIdPayload }),
+    const res = await fetch(portalUrl, {
+      method: "GET",
+      headers: { Authorization: `Basic ${credentials}` },
+      redirect: "follow",
     });
-    let data: Record<string, unknown> = {};
-    try {
-      data = (await res.json()) as Record<string, unknown>;
-    } catch {
-      const text = await res.text().catch(() => "");
-      console.error("[binotel] call-record-link non-JSON response:", res.status, text.slice(0, 200));
-      return null;
-    }
-    console.log("[binotel] call-record-link response (status", res.status, "):", JSON.stringify(data).slice(0, 500));
-    if (!res.ok) return null;
-    // Try known field names for the signed download URL
-    const link = data.recordLink ?? data.link ?? data.url ?? data.recordUrl ?? data.fileLink ?? data.file;
-    return typeof link === "string" && link ? link : null;
+    const contentType = res.headers.get("content-type") ?? "";
+    console.log("[binotel] portal auth fetch status:", res.status, "content-type:", contentType, "final-url:", res.url);
+    if (!res.ok || contentType.includes("text/html")) return null;
+    // Only useful if it redirected to a different (public) URL
+    if (res.url && res.url !== portalUrl) return res.url;
+    // No redirect — audio served directly with auth; we can't proxy it this way
+    console.warn("[binotel] portal returned audio directly (no redirect); cannot re-fetch without auth");
+    return null;
   } catch (err) {
-    console.error("[binotel] call-record-link API error:", err);
+    console.error("[binotel] portal auth fetch error:", err);
     return null;
   }
 }
@@ -94,33 +93,36 @@ export async function POST(request: Request) {
   // falling back to portal URLs that require a browser session and return an HTML login page.
   let recordingUrl = "";
 
+  // Extract portal URL from webhook body (always available regardless of credentials)
+  const portalUrl = String(
+    body["callDetails[file]"] ??
+    body["callDetails[record_url]"] ??
+    body["callDetails[recording_url]"] ??
+    body["callDetails[generatedFileLink]"] ??
+    body["callDetails[fileLink]"] ??
+    body["callDetails[linkToCallRecordInMyBusiness]"] ??
+    body.file ?? body.file_url ?? body.record_url ?? body.recording_url ?? body.recordingUrl ?? ""
+  );
+
   if (bKey && bSecret) {
-    if (!generalCallID) {
-      console.warn("[binotel] bKey/bSecret set but generalCallID missing from payload. Body keys:", Object.keys(body));
+    if (!portalUrl) {
+      console.warn("[binotel] bKey/bSecret set but no recording URL in payload. Body keys:", Object.keys(body));
       logApiRequest(auth.userId, "binotel", "skipped", 503);
-      return NextResponse.json({ error: "generalCallID missing, please retry" }, { status: 503 });
+      return NextResponse.json({ error: "recording URL missing, please retry" }, { status: 503 });
     }
-    const apiUrl = await getBinotelRecordingUrl(bKey, bSecret, generalCallID);
-    if (apiUrl) {
-      recordingUrl = apiUrl;
-      console.log("[binotel] resolved via API:", recordingUrl);
+    // Try downloading the portal URL with HTTP Basic Auth (key:secret)
+    const authUrl = await resolveBinotelRedirect(bKey, bSecret, portalUrl);
+    if (authUrl) {
+      recordingUrl = authUrl;
+      console.log("[binotel] resolved via Basic Auth:", recordingUrl);
     } else {
-      // API call failed — portal fallback URLs require auth and return HTML, so retry instead.
-      console.warn("[binotel] API returned no recordLink for generalCallID:", generalCallID, "— returning 503 for retry");
+      console.warn("[binotel] could not resolve public URL for generalCallID:", generalCallID, "— returning 503 for retry");
       logApiRequest(auth.userId, "binotel", "skipped", 503);
       return NextResponse.json({ error: "recording link not available yet, please retry" }, { status: 503 });
     }
   } else {
-    // No credentials — attempt portal URLs from the webhook body (may require auth).
-    recordingUrl = String(
-      body["callDetails[file]"] ??
-      body["callDetails[record_url]"] ??
-      body["callDetails[recording_url]"] ??
-      body["callDetails[generatedFileLink]"] ??
-      body["callDetails[fileLink]"] ??
-      body["callDetails[linkToCallRecordInMyBusiness]"] ??
-      body.file ?? body.file_url ?? body.record_url ?? body.recording_url ?? ""
-    );
+    // No credentials — attempt portal URL directly (will fail if auth required)
+    recordingUrl = portalUrl;
   }
 
   console.log("[binotel] requestType:", requestType, "recordingStatus:", recordingStatus, "generalCallID:", generalCallID, "recordingUrl:", recordingUrl);
