@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import Link from "next/link";
-import { ArrowLeft, WifiOff } from "lucide-react";
+import { ArrowLeft, WifiOff, X } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, Dot,
 } from "recharts";
@@ -39,6 +39,8 @@ type ApiLogEntry = {
   status: string;
   statusCode: number;
   userId: string;
+  userEmail: string | null;
+  userName: string | null;
   createdAt: string;
 };
 
@@ -197,6 +199,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
   const [newIds, setNewIds]           = useState<Set<string>>(new Set());
   const prevIds                       = useRef<Set<string>>(new Set());
   const [tick, setTick]               = useState(0);
+  const [filterEmail, setFilterEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 1000);
@@ -236,9 +239,21 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
     return () => es?.close();
   }, []);
 
-  const secAgo     = lastUpdate ? Math.round((Date.now() - lastUpdate.getTime()) / 1000) : null;
-  const callsSlice = calls.slice((callsPage - 1) * PAGE_SIZE, callsPage * PAGE_SIZE);
-  const apiSlice   = apiLogs.slice((apiPage - 1) * PAGE_SIZE, apiPage * PAGE_SIZE);
+  const secAgo = lastUpdate ? Math.round((Date.now() - lastUpdate.getTime()) / 1000) : null;
+
+  // Unique accounts derived from calls + api logs
+  const accounts = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const c of calls)   if (c.userEmail) map.set(c.userEmail, c.userName ?? c.userEmail);
+    for (const l of apiLogs) if (l.userEmail) map.set(l.userEmail, l.userName ?? l.userEmail);
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b));
+  }, [calls, apiLogs]);
+
+  const filteredCalls   = filterEmail ? calls.filter((c) => c.userEmail === filterEmail)   : calls;
+  const filteredApiLogs = filterEmail ? apiLogs.filter((l) => l.userEmail === filterEmail) : apiLogs;
+
+  const callsSlice = filteredCalls.slice((callsPage - 1) * PAGE_SIZE, callsPage * PAGE_SIZE);
+  const apiSlice   = filteredApiLogs.slice((apiPage - 1) * PAGE_SIZE, apiPage * PAGE_SIZE);
 
   // Bucket raw timestamps by browser-local hour (0–current hour)
   const chartData = (() => {
@@ -282,6 +297,31 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
         <span className="text-xs font-semibold text-slate-800">Realtime Dashboard</span>
 
         <div className="ml-auto flex items-center gap-3">
+          {/* Account filter */}
+          {accounts.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <select
+                value={filterEmail ?? ""}
+                onChange={(e) => { setFilterEmail(e.target.value || null); setCallsPage(1); setApiPage(1); }}
+                className="rounded-md border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 shadow-sm focus:outline-none focus:ring-1 focus:ring-brand-400"
+              >
+                <option value="">All accounts ({accounts.length})</option>
+                {accounts.map(([email, name]) => (
+                  <option key={email} value={email}>{name !== email ? `${name} · ${email}` : email}</option>
+                ))}
+              </select>
+              {filterEmail && (
+                <button
+                  onClick={() => { setFilterEmail(null); setCallsPage(1); setApiPage(1); }}
+                  className="rounded p-0.5 text-slate-400 hover:text-slate-700 transition-colors"
+                  title="Clear filter"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          )}
+
           {connected ? (
             <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -377,8 +417,8 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
           {/* Calls feed */}
           <Panel
             title="Recent Calls"
-            sub="last 100"
-            right={`${calls.length} records`}
+            sub={filterEmail ? `filtered · ${filteredCalls.length} of ${calls.length}` : "last 100"}
+            right={`${filteredCalls.length} records`}
             className="flex-1 min-h-0"
           >
             <div className="flex-1 min-h-0 overflow-auto">
@@ -442,15 +482,15 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
                 </tbody>
               </table>
             </div>
-            <Paginator page={callsPage} total={calls.length} pageSize={PAGE_SIZE} onChange={setCallsPage} />
+            <Paginator page={callsPage} total={filteredCalls.length} pageSize={PAGE_SIZE} onChange={setCallsPage} />
           </Panel>
         </div>
 
         {/* Right column — API requests full height */}
         <Panel
           title="API Requests"
-          sub="last 100"
-          right={`${apiLogs.length} records`}
+          sub={filterEmail ? `filtered · ${filteredApiLogs.length} of ${apiLogs.length}` : "last 100"}
+          right={`${filteredApiLogs.length} records`}
           className="min-h-0"
         >
           <div className="flex-1 min-h-0 overflow-auto">
@@ -495,7 +535,7 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
               </tbody>
             </table>
           </div>
-          <Paginator page={apiPage} total={apiLogs.length} pageSize={PAGE_SIZE} onChange={setApiPage} />
+          <Paginator page={apiPage} total={filteredApiLogs.length} pageSize={PAGE_SIZE} onChange={setApiPage} />
         </Panel>
 
       </div>

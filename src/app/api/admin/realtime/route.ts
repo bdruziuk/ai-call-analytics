@@ -38,7 +38,7 @@ export async function GET(request: Request) {
           const todayStart = new Date();
           todayStart.setHours(0, 0, 0, 0);
 
-          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday, totalApiCalls, callsTodayRaw, apiLogs, apiTodayRaw] =
+          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday, totalApiCalls, callsTodayRaw, apiLogs, apiTodayRaw, allUsers] =
             await Promise.all([
               db.call.findMany({
                 orderBy: { createdAt: "desc" },
@@ -72,21 +72,18 @@ export async function GET(request: Request) {
               db.apiLog.findMany({
                 orderBy: { createdAt: "desc" },
                 take: 100,
-                select: {
-                  id: true,
-                  endpoint: true,
-                  status: true,
-                  statusCode: true,
-                  createdAt: true,
-                  userId: true,
-                },
+                select: { id: true, endpoint: true, status: true, statusCode: true, createdAt: true, userId: true },
               }),
               // Last 48h of API logs — client will filter to its local today and bucket by local hour
               db.apiLog.findMany({
                 where: { createdAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) } },
                 select: { createdAt: true },
               }),
+              // User map for joining into API logs
+              db.user.findMany({ select: { id: true, email: true, name: true } }),
             ]);
+
+          const userMap = new Map(allUsers.map((u) => [u.id, u]));
 
           // Send raw ISO timestamps — client buckets by its own local timezone
           const todayTimestamps = {
@@ -116,14 +113,19 @@ export async function GET(request: Request) {
               totalApiCalls,
             },
             todayTimestamps,
-            apiLogs: apiLogs.map((l) => ({
-              id: l.id,
-              endpoint: l.endpoint,
-              status: l.status,
-              statusCode: l.statusCode,
-              userId: l.userId,
-              createdAt: l.createdAt.toISOString(),
-            })),
+            apiLogs: apiLogs.map((l) => {
+              const u = userMap.get(l.userId);
+              return {
+                id: l.id,
+                endpoint: l.endpoint,
+                status: l.status,
+                statusCode: l.statusCode,
+                userId: l.userId,
+                userEmail: u?.email ?? null,
+                userName: u?.name ?? null,
+                createdAt: l.createdAt.toISOString(),
+              };
+            }),
           });
         } catch (err) {
           console.error("[realtime]", err);
