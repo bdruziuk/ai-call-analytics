@@ -118,6 +118,7 @@ model Call {
   fileName        String
   filePath        String
   externalId      String?  // provider call ID (e.g. Binotel generalCallID) for deduplication
+  internalNumber  String?  // company number the client called (Binotel internalNumber)
 
   source          String   @default("manual")   // "manual" | "binotel" | "ringostat" | "voiptime" | "kyivstar" | "twilio" | "aircall" | "api"
   status          String   @default("uploaded")

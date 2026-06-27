@@ -24,6 +24,7 @@ type CallItem = {
   createdAt: string;
   errorMessage: string | null;
   salesProfileId: string | null;
+  internalNumber: string | null;
 };
 
 type SalesProfile = {
@@ -555,6 +556,9 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
                   }`} />
                   <Link href={`/${lang}/calls/${call.id}`} className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-slate-800">{call.fileName}</p>
+                    {call.internalNumber && (
+                      <p className="text-xs text-slate-400">{call.internalNumber}</p>
+                    )}
                   </Link>
                   <div className="flex shrink-0 items-center gap-1">
                     <Link href={`/${lang}/calls/${call.id}`} aria-label={t.dashboard.table.view}
@@ -632,8 +636,11 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
                   <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
                     {new Date(call.createdAt).toLocaleDateString(t.dateLocale)}
                   </td>
-                  <td className="px-4 py-3 text-sm font-medium text-slate-800 max-w-[180px] truncate">
-                    {call.fileName}
+                  <td className="px-4 py-3 text-sm font-medium text-slate-800 max-w-[180px]">
+                    <p className="truncate">{call.fileName}</p>
+                    {call.internalNumber && (
+                      <p className="text-xs text-slate-400">{call.internalNumber}</p>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-600">
                     {getReportTypeLabel(call.reportType)}

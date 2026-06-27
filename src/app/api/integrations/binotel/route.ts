@@ -55,9 +55,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to parse request body" }, { status: 400 });
   }
 
-  const recordingStatus = String(body["callDetails[recordingStatus]"] ?? "").toLowerCase();
-  const disposition     = String(body["callDetails[disposition]"] ?? body.disposition ?? "").toUpperCase();
-  const generalCallID   = String(body["callDetails[generalCallID]"] ?? body.generalCallID ?? "");
+  const recordingStatus  = String(body["callDetails[recordingStatus]"] ?? "").toLowerCase();
+  const disposition      = String(body["callDetails[disposition]"] ?? body.disposition ?? "").toUpperCase();
+  const generalCallID    = String(body["callDetails[generalCallID]"] ?? body.generalCallID ?? "");
+  const internalNumber   = String(body["callDetails[internalNumber]"] ?? body.internalNumber ?? "") || undefined;
 
   console.log("[binotel] generalCallID:", generalCallID, "recordingStatus:", recordingStatus, "disposition:", disposition);
 
@@ -95,6 +96,7 @@ export async function POST(request: Request) {
           reportType,
           fileName: `${generalCallID}.mp3`,
           filePath: "",
+          internalNumber,
         },
       });
       console.log("[binotel] generalCallID:", generalCallID, "— created processing record, waiting for upload");
@@ -123,7 +125,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await downloadAndQueueRecording({ recordingUrl: s3Url, reportType, userId: auth.userId, prefix: "binotel" });
+    const result = await downloadAndQueueRecording({ recordingUrl: s3Url, reportType, userId: auth.userId, prefix: "binotel", internalNumber });
 
     // Update the processing record with the real call data
     if (existing) {
