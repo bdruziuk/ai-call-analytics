@@ -7,19 +7,23 @@ import { notFound, redirect } from "next/navigation";
 import { getOrCreateSubscription } from "@/lib/planLimits";
 import { getPlan } from "@/lib/plans";
 
-type Props = { params: Promise<{ lang: string }> };
+type Props = { params: Promise<{ lang: string }>; searchParams: Promise<{ viewAs?: string }> };
 
-export default async function ProfilesPage({ params }: Props) {
+export default async function ProfilesPage({ params, searchParams }: Props) {
   const { lang } = await params;
+  const { viewAs } = await searchParams;
   if (!hasLocale(lang)) notFound();
 
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect(`/${lang}/auth/signin`);
 
+  const { resolveUserId } = await import("@/lib/adminViewAs");
+  const userId = await resolveUserId(session.user.id, session.user.email, viewAs);
+
   const [t, profiles, sub, dbUser] = await Promise.all([
     getDictionary(lang),
     db.salesProfile.findMany({
-      where: { userId: session.user.id },
+      where: { userId },
       include: {
         calls: {
           where: { status: "completed" },
@@ -30,9 +34,9 @@ export default async function ProfilesPage({ params }: Props) {
       },
       orderBy: { createdAt: "asc" },
     }),
-    getOrCreateSubscription(session.user.id),
+    getOrCreateSubscription(userId),
     db.user.findUnique({
-      where:  { id: session.user.id },
+      where:  { id: userId },
       select: { isTestAccount: true },
     }),
   ]);

@@ -755,6 +755,23 @@ function UserRow({
           }
         </button>
 
+        {/* ── View as user ── */}
+        {[
+          { href: `/${locale}/dashboard?viewAs=${user.id}`,  label: "Dashboard" },
+          { href: `/${locale}/analytics?viewAs=${user.id}`,  label: "Analytics" },
+          { href: `/${locale}/calls?viewAs=${user.id}`,      label: "Calls" },
+          { href: `/${locale}/profiles?viewAs=${user.id}`,   label: "Profiles" },
+        ].map(({ href, label }) => (
+          <Link
+            key={label}
+            href={href}
+            target="_blank"
+            className="flex-shrink-0 rounded-lg border border-slate-200 px-2 py-1.5 text-[10px] font-medium text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+          >
+            {label}
+          </Link>
+        ))}
+
         {/* ── Test account toggle (separate from expand zone) ── */}
         <label
           className="flex flex-shrink-0 cursor-pointer select-none items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"

@@ -8,7 +8,7 @@ import { getOrCreateSubscription } from "@/lib/planLimits";
 
 type Props = {
   params: Promise<{ lang: string }>;
-  searchParams: Promise<{ manager?: string }>;
+  searchParams: Promise<{ manager?: string; viewAs?: string }>;
 };
 
 export default async function DashboardPage({ params, searchParams }: Props) {
@@ -18,23 +18,25 @@ export default async function DashboardPage({ params, searchParams }: Props) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect(`/${lang}/auth/signin`);
 
+  const { resolveUserId } = await import("@/lib/adminViewAs");
+  const { manager, viewAs } = await searchParams;
+  const userId = await resolveUserId(session.user.id, session.user.email, viewAs);
+
   // Guard: session cookie may outlive the DB record (e.g. after a DB reset).
   const dbUserCheck = await db.user.findUnique({
-    where:  { id: session.user.id },
+    where:  { id: userId },
     select: { isTestAccount: true },
   });
   if (!dbUserCheck) redirect(`/${lang}/auth/signin`);
 
-  const { manager } = await searchParams;
-
   const [t, profiles, sub] = await Promise.all([
     getDictionary(lang),
     db.salesProfile.findMany({
-      where: { userId: session.user.id },
+      where: { userId },
       select: { id: true, name: true, description: true, photo: true },
       orderBy: { name: "asc" },
     }),
-    getOrCreateSubscription(session.user.id),
+    getOrCreateSubscription(userId),
   ]);
 
   return (

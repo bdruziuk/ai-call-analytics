@@ -7,7 +7,7 @@ import { AnalyticsClient } from "@/components/analytics/AnalyticsClient";
 
 type Props = {
   params:       Promise<{ lang: string }>;
-  searchParams: Promise<{ from?: string; to?: string }>;
+  searchParams: Promise<{ from?: string; to?: string; viewAs?: string }>;
 };
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
@@ -35,12 +35,15 @@ function topN(
 /* ── Page ────────────────────────────────────────────────────────────────── */
 
 export default async function AnalyticsPage({ params, searchParams }: Props) {
-  const { lang }       = await params;
-  const { from, to }   = await searchParams;
+  const { lang }             = await params;
+  const { from, to, viewAs } = await searchParams;
   if (!hasLocale(lang)) notFound();
 
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect(`/${lang}/auth/signin`);
+
+  const { resolveUserId } = await import("@/lib/adminViewAs");
+  const userId = await resolveUserId(session.user.id, session.user.email, viewAs);
 
   // Build optional date range filter
   const dateFilter: { gte?: Date; lte?: Date } = {};
@@ -52,7 +55,7 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
     getDictionary(lang),
     db.call.findMany({
       where:   {
-        userId: session.user.id,
+        userId,
         status: "completed",
         ...(hasDateFilter && { createdAt: dateFilter }),
       },
@@ -66,7 +69,7 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
       orderBy: { createdAt: "asc" },
     }),
     db.salesProfile.findMany({
-      where:   { userId: session.user.id },
+      where:   { userId },
       select:  { id: true, name: true },
     }),
   ]);

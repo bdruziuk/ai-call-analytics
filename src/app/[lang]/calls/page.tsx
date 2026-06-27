@@ -7,27 +7,32 @@ import { authOptions } from "@/auth";
 import { CallsTableClient } from "@/components/calls/CallsTableClient";
 
 type Props = {
-  params: Promise<{ lang: string }>;
+  params:       Promise<{ lang: string }>;
+  searchParams: Promise<{ viewAs?: string }>;
 };
 
-export default async function CallsPage({ params }: Props) {
+export default async function CallsPage({ params, searchParams }: Props) {
   const { lang } = await params;
+  const { viewAs } = await searchParams;
   if (!hasLocale(lang)) notFound();
 
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect(`/${lang}/auth/signin`);
+
+  const { resolveUserId } = await import("@/lib/adminViewAs");
+  const userId = await resolveUserId(session.user.id, session.user.email, viewAs);
 
   const PAGE = 30;
 
   const [t, rawCalls, profiles] = await Promise.all([
     getDictionary(lang),
     db.call.findMany({
-      where:   { userId: session.user.id },
+      where:   { userId },
       orderBy: { createdAt: "desc" },
       take:    PAGE + 1,
     }),
     db.salesProfile.findMany({
-      where:  { userId: session.user.id },
+      where:  { userId },
       select: { id: true, name: true },
     }),
   ]);
