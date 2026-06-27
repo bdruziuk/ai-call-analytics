@@ -540,9 +540,9 @@ function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret, userI
 /* ── Single user row ──────────────────────────────────────────────────────── */
 
 function UserRow({
-  user, t, locale, onDelete, onCallRemoved,
+  user, t, locale, lang, onDelete, onCallRemoved,
 }: {
-  user: UserRecord; t: Dictionary; locale: string;
+  user: UserRecord; t: Dictionary; locale: string; lang: string;
   onDelete: (id: string) => void;
   onCallRemoved: (callId: string) => void;
 }) {
@@ -757,10 +757,10 @@ function UserRow({
 
         {/* ── View as user ── */}
         {[
-          { href: `/${locale}/dashboard?viewAs=${user.id}`,  label: "Dashboard" },
-          { href: `/${locale}/analytics?viewAs=${user.id}`,  label: "Analytics" },
-          { href: `/${locale}/calls?viewAs=${user.id}`,      label: "Calls" },
-          { href: `/${locale}/profiles?viewAs=${user.id}`,   label: "Profiles" },
+          { href: `/${lang}/dashboard?viewAs=${user.id}`,  label: "Dashboard" },
+          { href: `/${lang}/analytics?viewAs=${user.id}`,  label: "Analytics" },
+          { href: `/${lang}/calls?viewAs=${user.id}`,      label: "Calls" },
+          { href: `/${lang}/profiles?viewAs=${user.id}`,   label: "Profiles" },
         ].map(({ href, label }) => (
           <Link
             key={label}
@@ -1336,7 +1336,7 @@ export function AdminPanel({ t, lang, initialUsers, initialPromoCodes }: Props) 
       ) : (
         <div className="space-y-3">
           {filtered.map((u) => (
-            <UserRow key={u.id} user={u} t={t} locale={locale} onDelete={handleUserDeleted} onCallRemoved={handleCallRemoved} />
+            <UserRow key={u.id} user={u} t={t} locale={locale} lang={lang} onDelete={handleUserDeleted} onCallRemoved={handleCallRemoved} />
           ))}
         </div>
       )}
