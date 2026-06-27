@@ -4,40 +4,21 @@ import { downloadAndQueueRecording, VALID_REPORT_TYPES } from "@/lib/integration
 import { logApiRequest } from "@/lib/apiLog";
 import { db } from "@/lib/db";
 
-const RECORDING_FIELDS = [
-  "callDetails[file]",
-  "callDetails[record_url]",
-  "callDetails[recording_url]",
-  "callDetails[recordingUrl]",
-  "callDetails[generatedFileLink]",
-  "callDetails[fileLink]",
-  "callDetails[linkToCallRecordInMyBusiness]",
-  "file",
-  "file_url",
-  "record_url",
-  "recording_url",
-  "recordingUrl",
-];
-
-// Try fetching a URL, optionally with key/secret as query params.
-// Returns the final URL if the response is non-HTML audio, null otherwise.
-async function tryFetch(url: string, bKey?: string, bSecret?: string): Promise<string | null> {
+async function getBinotelS3Url(bKey: string, bSecret: string, generalCallID: string): Promise<string | null> {
   try {
-    let fetchUrl = url;
-    if (bKey && bSecret) {
-      const u = new URL(url);
-      u.searchParams.set("key", bKey);
-      u.searchParams.set("secret", bSecret);
-      fetchUrl = u.toString();
+    const res = await fetch("https://api.binotel.com/api/4.0/stats/call-record.json", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: bKey, secret: bSecret, generalCallID: Number(generalCallID) }),
+    });
+    const data = await res.json() as Record<string, unknown>;
+    console.log("[binotel] call-record response:", JSON.stringify(data).slice(0, 300));
+    if (data.status === "success" && typeof data.url === "string" && data.url) {
+      return data.url;
     }
-    const res = await fetch(fetchUrl, { redirect: "follow" });
-    const ct = res.headers.get("content-type") ?? "";
-    console.log(`[binotel] tryFetch${bKey ? "(+creds)" : ""} status:${res.status} ct:${ct} url:${fetchUrl.slice(0, 120)} final:${res.url.slice(0, 120)}`);
-    if (!res.ok || ct.includes("text/html")) return null;
-    // If redirected, return the public CDN URL; otherwise the authenticated URL itself
-    return res.url || fetchUrl;
+    return null;
   } catch (err) {
-    console.error("[binotel] tryFetch error:", err);
+    console.error("[binotel] call-record API error:", err);
     return null;
   }
 }
@@ -76,13 +57,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Failed to parse request body" }, { status: 400 });
   }
 
-  // Log full body for diagnostics
-  console.log("[binotel] BODY:", JSON.stringify(body));
-
   const requestType     = String(body.requestType ?? "");
   const recordingStatus = String(body["callDetails[recordingStatus]"] ?? "").toLowerCase();
   const disposition     = String(body["callDetails[disposition]"] ?? body.disposition ?? "").toUpperCase();
   const generalCallID   = String(body["callDetails[generalCallID]"] ?? body.generalCallID ?? "");
+
+  console.log("[binotel] requestType:", requestType, "recordingStatus:", recordingStatus, "generalCallID:", generalCallID, "disposition:", disposition);
 
   if (disposition && disposition !== "ANSWER" && disposition !== "ANSWERED") {
     logApiRequest(auth.userId, "binotel", "skipped", 200);
@@ -94,34 +74,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "recording still uploading, please retry" }, { status: 503 });
   }
 
-  // Collect all non-empty URL candidates from the body
-  const urlCandidates: string[] = [];
-  for (const field of RECORDING_FIELDS) {
-    const val = String(body[field] ?? "").trim();
-    if (val && !urlCandidates.includes(val)) urlCandidates.push(val);
-  }
-  console.log("[binotel] requestType:", requestType, "recordingStatus:", recordingStatus, "generalCallID:", generalCallID, "urlCandidates:", urlCandidates);
-
-  if (!urlCandidates.length) {
+  if (!generalCallID) {
     logApiRequest(auth.userId, "binotel", "no_recording", 400);
-    return NextResponse.json({ error: "No recording URL in payload" }, { status: 400 });
+    return NextResponse.json({ error: "No generalCallID in payload" }, { status: 400 });
   }
 
-  // Try each candidate URL — with credentials first, then without
   let recordingUrl = "";
-  for (const candidate of urlCandidates) {
-    if (bKey && bSecret) {
-      const result = await tryFetch(candidate, bKey, bSecret);
-      if (result) { recordingUrl = result; break; }
+
+  if (bKey && bSecret) {
+    const s3Url = await getBinotelS3Url(bKey, bSecret, generalCallID);
+    if (s3Url) {
+      recordingUrl = s3Url;
+    } else {
+      console.warn("[binotel] call-record API returned no URL for generalCallID:", generalCallID, "— returning 503 for retry");
+      logApiRequest(auth.userId, "binotel", "skipped", 503);
+      return NextResponse.json({ error: "recording link not available yet, please retry" }, { status: 503 });
     }
-    const result = await tryFetch(candidate);
-    if (result) { recordingUrl = result; break; }
+  } else {
+    // No credentials — try portal URL from webhook body (will likely fail without auth)
+    recordingUrl = String(
+      body["callDetails[linkToCallRecordInMyBusiness]"] ??
+      body["callDetails[file]"] ?? body["callDetails[record_url]"] ?? ""
+    );
   }
 
   if (!recordingUrl) {
-    console.warn("[binotel] all URL attempts failed for generalCallID:", generalCallID, "— returning 503 for retry");
-    logApiRequest(auth.userId, "binotel", "skipped", 503);
-    return NextResponse.json({ error: "recording link not available yet, please retry" }, { status: 503 });
+    logApiRequest(auth.userId, "binotel", "no_recording", 400);
+    return NextResponse.json({ error: "No recording URL" }, { status: 400 });
   }
 
   try {
