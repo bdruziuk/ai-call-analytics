@@ -9,17 +9,27 @@ async function getBinotelRecordingUrl(
   bSecret: string,
   generalCallID: string,
 ): Promise<string | null> {
+  const callIdNum = Number(generalCallID);
+  const callIdPayload = Number.isFinite(callIdNum) ? callIdNum : generalCallID;
   try {
     const res = await fetch("https://api.binotel.com/api/4.0/stats/call-record-link.json", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: bKey, secret: bSecret, generalCallID }),
+      body: JSON.stringify({ key: bKey, secret: bSecret, generalCallID: callIdPayload }),
     });
-    const data = (await res.json()) as Record<string, unknown>;
-    console.log("[binotel] call-record-link API response:", JSON.stringify(data).slice(0, 500));
+    let data: Record<string, unknown> = {};
+    try {
+      data = (await res.json()) as Record<string, unknown>;
+    } catch {
+      const text = await res.text().catch(() => "");
+      console.error("[binotel] call-record-link non-JSON response:", res.status, text.slice(0, 200));
+      return null;
+    }
+    console.log("[binotel] call-record-link response (status", res.status, "):", JSON.stringify(data).slice(0, 500));
     if (!res.ok) return null;
-    // Binotel returns { status: "success", recordLink: "https://..." }
-    return typeof data.recordLink === "string" ? data.recordLink : null;
+    // Try known field names for the signed download URL
+    const link = data.recordLink ?? data.link ?? data.url ?? data.recordUrl ?? data.fileLink ?? data.file;
+    return typeof link === "string" && link ? link : null;
   } catch (err) {
     console.error("[binotel] call-record-link API error:", err);
     return null;
