@@ -77,23 +77,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "recording still uploading, please retry" }, { status: 503 });
   }
 
-  // Resolve the recording URL.
-  // If Binotel API credentials are provided in the webhook URL (?bKey=...&bSecret=...),
-  // use the Binotel API to get a real signed download link.
-  // Otherwise fall back to the portal URL (which may require auth and return HTML).
+  // Resolve the recording URL via Binotel API (preferred — returns a signed, directly downloadable link).
+  // If credentials exist but the API call fails, return 503 so Binotel retries rather than
+  // falling back to portal URLs that require a browser session and return an HTML login page.
   let recordingUrl = "";
 
-  if (bKey && bSecret && generalCallID) {
+  if (bKey && bSecret) {
+    if (!generalCallID) {
+      console.warn("[binotel] bKey/bSecret set but generalCallID missing from payload. Body keys:", Object.keys(body));
+      logApiRequest(auth.userId, "binotel", "skipped", 503);
+      return NextResponse.json({ error: "generalCallID missing, please retry" }, { status: 503 });
+    }
     const apiUrl = await getBinotelRecordingUrl(bKey, bSecret, generalCallID);
     if (apiUrl) {
       recordingUrl = apiUrl;
       console.log("[binotel] resolved via API:", recordingUrl);
     } else {
-      console.warn("[binotel] API returned no recordLink for generalCallID:", generalCallID);
+      // API call failed — portal fallback URLs require auth and return HTML, so retry instead.
+      console.warn("[binotel] API returned no recordLink for generalCallID:", generalCallID, "— returning 503 for retry");
+      logApiRequest(auth.userId, "binotel", "skipped", 503);
+      return NextResponse.json({ error: "recording link not available yet, please retry" }, { status: 503 });
     }
-  }
-
-  if (!recordingUrl) {
+  } else {
+    // No credentials — attempt portal URLs from the webhook body (may require auth).
     recordingUrl = String(
       body["callDetails[file]"] ??
       body["callDetails[record_url]"] ??
