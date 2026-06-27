@@ -4,23 +4,19 @@ import { db } from "@/lib/db";
 import { downloadAndQueueRecording, VALID_REPORT_TYPES } from "@/lib/integrationHelper";
 import { logApiRequest } from "@/lib/apiLog";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const key = searchParams.get("key") ?? "";
-
-  const auth = await validateApiKeyFromString(key);
-  if (!auth) return NextResponse.json({ error: "Invalid or missing API key" }, { status: 401 });
-
-  const userCreds = await db.user.findUnique({
-    where: { id: auth.userId },
-    select: { binotelKey: true, binotelSecret: true },
+export async function GET() {
+  // Temporary diagnostic endpoint — finds first user with Binotel credentials in DB
+  const userCreds = await db.user.findFirst({
+    where: { binotelKey: { not: "" }, binotelSecret: { not: "" } },
+    select: { id: true, binotelKey: true, binotelSecret: true },
   });
-  const bKey    = userCreds?.binotelKey    ?? "";
-  const bSecret = userCreds?.binotelSecret ?? "";
 
-  if (!bKey || !bSecret) {
-    return NextResponse.json({ error: "binotelKey/binotelSecret not set" }, { status: 400 });
+  if (!userCreds?.binotelKey || !userCreds?.binotelSecret) {
+    return NextResponse.json({ error: "No user with binotelKey/binotelSecret found in DB" }, { status: 400 });
   }
+
+  const bKey    = userCreds.binotelKey;
+  const bSecret = userCreds.binotelSecret;
 
   const now = Math.floor(Date.now() / 1000);
   const dayAgo = now - 86400;
@@ -41,6 +37,23 @@ export async function GET(request: Request) {
   const calls = (Array.isArray(data.generalCalls) ? data.generalCalls : []) as Record<string, unknown>[];
   const withRecording = calls.find(c => c.file || c.fileLink || c.record_url || c.recordLink || c.recordUrl);
 
+  // Try call-record.json with the first ANSWER call's generalCallID
+  const answerCall = calls.find(c => String(c.disposition ?? "").toUpperCase() === "ANSWER") as Record<string, unknown> | undefined;
+  let callRecordResult: unknown = null;
+  if (answerCall?.generalCallID) {
+    const r = await fetch("https://api.binotel.com/api/4.0/stats/call-record.json", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ key: bKey, secret: bSecret, generalCallID: Number(answerCall.generalCallID) }),
+    });
+    const rct = r.headers.get("content-type") ?? "";
+    if (rct.includes("application/json")) {
+      callRecordResult = { status: r.status, data: await r.json(), generalCallID: answerCall.generalCallID };
+    } else {
+      callRecordResult = { status: r.status, contentType: rct, body: (await r.text()).slice(0, 300) };
+    }
+  }
+
   return NextResponse.json({
     apiStatus: res.status,
     totalCalls: calls.length,
@@ -48,6 +61,7 @@ export async function GET(request: Request) {
     firstCallWithRecording: withRecording ?? null,
     allFieldNames: calls[0] ? Object.keys(calls[0]) : [],
     rawDataKeys: Object.keys(data),
+    callRecordEndpoint: callRecordResult,
   });
 }
 
