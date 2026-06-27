@@ -25,11 +25,12 @@ export async function downloadAndQueueRecording(opts: {
   /** Short prefix used in the saved filename and in log messages */
   prefix: string;
   internalNumber?: string;
+  salesProfileId?: string;
 }): Promise<
   | { id: string; status: string; fileName: string; pollUrl: string }
   | { skipped: true; reason: string }
 > {
-  const { recordingUrl, reportType, userId, prefix, internalNumber } = opts;
+  const { recordingUrl, reportType, userId, prefix, internalNumber, salesProfileId } = opts;
 
   // ── Plan limit check ────────────────────────────────────────────────────
   const limitCheck = await checkUploadAllowed(userId);
@@ -69,7 +70,7 @@ export async function downloadAndQueueRecording(opts: {
   await writeFile(filePath, audioBuffer);
 
   const call = await db.call.create({
-    data: { fileName: baseName, filePath, status: "queued", reportType, userId, source: prefix, internalNumber },
+    data: { fileName: baseName, filePath, status: "queued", reportType, userId, source: prefix, internalNumber, salesProfileId },
   });
 
   // Enqueue through the concurrency limiter — processCall deletes the file when done

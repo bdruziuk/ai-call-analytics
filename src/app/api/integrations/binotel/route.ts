@@ -72,6 +72,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "No generalCallID in payload" }, { status: 400 });
   }
 
+  // Auto-create SalesProfile for this internalNumber if not yet exists
+  let salesProfileId: string | undefined;
+  if (internalNumber) {
+    const profile = await db.salesProfile.upsert({
+      where: { userId_name: { userId: auth.userId, name: internalNumber } },
+      update: {},
+      create: { userId: auth.userId, name: internalNumber },
+      select: { id: true },
+    });
+    salesProfileId = profile.id;
+    console.log("[binotel] salesProfileId for", internalNumber, ":", salesProfileId);
+  }
+
   // Check if this call was already successfully processed
   const existing = await db.call.findFirst({
     where: { userId: auth.userId, externalId: generalCallID },
@@ -97,6 +110,7 @@ export async function POST(request: Request) {
           fileName: `${generalCallID}.mp3`,
           filePath: "",
           internalNumber,
+          salesProfileId,
         },
       });
       console.log("[binotel] generalCallID:", generalCallID, "— created processing record, waiting for upload");
@@ -125,7 +139,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await downloadAndQueueRecording({ recordingUrl: s3Url, reportType, userId: auth.userId, prefix: "binotel", internalNumber });
+    const result = await downloadAndQueueRecording({ recordingUrl: s3Url, reportType, userId: auth.userId, prefix: "binotel", internalNumber, salesProfileId });
 
     // Update the processing record with the real call data
     if (existing) {

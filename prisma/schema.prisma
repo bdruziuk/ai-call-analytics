@@ -75,6 +75,8 @@ model SalesProfile {
   calls       Call[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@unique([userId, name])
 }
 
 model PromoCode {
