@@ -4,35 +4,44 @@ import { downloadAndQueueRecording, VALID_REPORT_TYPES } from "@/lib/integration
 import { logApiRequest } from "@/lib/apiLog";
 import { db } from "@/lib/db";
 
-// Binotel's portal recording URL requires auth. Fetch it with HTTP Basic Auth (key:secret),
-// following redirects. If Binotel redirects to a public CDN/signed URL, return that URL so
-// downloadAndQueueRecording can fetch it directly (without auth). Returns null if no redirect
-// or if the response is HTML (auth failed or recording not ready).
-async function resolveBinotelRedirect(
+// Binotel portal recording URLs require authentication. Try two approaches:
+// 1. Append key/secret as query params (common for older telephony APIs)
+// 2. HTTP Basic Auth header
+// If Binotel redirects to a public CDN URL, return it so downloadAndQueueRecording can fetch directly.
+// If it returns audio directly (no redirect), we cannot re-fetch without auth, so return null.
+async function resolveBinotelPortalUrl(
   bKey: string,
   bSecret: string,
   portalUrl: string,
 ): Promise<string | null> {
   if (!portalUrl) return null;
+
+  const tryFetch = async (url: string, headers?: Record<string, string>): Promise<string | null> => {
+    try {
+      const res = await fetch(url, { method: "GET", headers, redirect: "follow" });
+      const contentType = res.headers.get("content-type") ?? "";
+      console.log("[binotel] portal fetch url:", url.slice(0, 120), "status:", res.status, "content-type:", contentType, "final-url:", res.url.slice(0, 120));
+      if (!res.ok || contentType.includes("text/html")) return null;
+      if (res.url && res.url !== url) return res.url; // redirected to public CDN URL
+      // Audio served directly — cannot re-fetch without auth
+      console.warn("[binotel] portal returned audio directly (no redirect) — cannot proxy");
+      return null;
+    } catch (err) {
+      console.error("[binotel] portal fetch error:", err);
+      return null;
+    }
+  };
+
+  // Attempt 1: key/secret as query params
+  const urlWithParams = new URL(portalUrl);
+  urlWithParams.searchParams.set("key", bKey);
+  urlWithParams.searchParams.set("secret", bSecret);
+  const result1 = await tryFetch(urlWithParams.toString());
+  if (result1) return result1;
+
+  // Attempt 2: HTTP Basic Auth header
   const credentials = Buffer.from(`${bKey}:${bSecret}`).toString("base64");
-  try {
-    const res = await fetch(portalUrl, {
-      method: "GET",
-      headers: { Authorization: `Basic ${credentials}` },
-      redirect: "follow",
-    });
-    const contentType = res.headers.get("content-type") ?? "";
-    console.log("[binotel] portal auth fetch status:", res.status, "content-type:", contentType, "final-url:", res.url);
-    if (!res.ok || contentType.includes("text/html")) return null;
-    // Only useful if it redirected to a different (public) URL
-    if (res.url && res.url !== portalUrl) return res.url;
-    // No redirect — audio served directly with auth; we can't proxy it this way
-    console.warn("[binotel] portal returned audio directly (no redirect); cannot re-fetch without auth");
-    return null;
-  } catch (err) {
-    console.error("[binotel] portal auth fetch error:", err);
-    return null;
-  }
+  return tryFetch(portalUrl, { Authorization: `Basic ${credentials}` });
 }
 
 export async function POST(request: Request) {
@@ -111,7 +120,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "recording URL missing, please retry" }, { status: 503 });
     }
     // Try downloading the portal URL with HTTP Basic Auth (key:secret)
-    const authUrl = await resolveBinotelRedirect(bKey, bSecret, portalUrl);
+    const authUrl = await resolveBinotelPortalUrl(bKey, bSecret, portalUrl);
     if (authUrl) {
       recordingUrl = authUrl;
       console.log("[binotel] resolved via Basic Auth:", recordingUrl);
