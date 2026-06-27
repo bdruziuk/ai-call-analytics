@@ -20,48 +20,40 @@ export async function GET() {
 
   const now = Math.floor(Date.now() / 1000);
   const dayAgo = now - 86400;
+  const payload = { key: bKey, secret: bSecret, startPeriod: dayAgo, stopPeriod: now };
 
-  // Query recent calls to inspect the recording URL format returned by Binotel API
-  const res = await fetch("https://api.binotel.com/api/4.0/stats/general-calls-for-period.json", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ key: bKey, secret: bSecret, startPeriod: dayAgo, stopPeriod: now }),
-  });
-  const ct = res.headers.get("content-type") ?? "";
-  if (!ct.includes("application/json")) {
-    const text = await res.text().catch(() => "");
-    return NextResponse.json({ error: "non-JSON response", status: res.status, body: text.slice(0, 500) });
-  }
-  const data = await res.json() as Record<string, unknown>;
-
-  const calls = (Array.isArray(data.generalCalls) ? data.generalCalls : []) as Record<string, unknown>[];
-  const withRecording = calls.find(c => c.file || c.fileLink || c.record_url || c.recordLink || c.recordUrl);
-
-  // Try call-record.json with the first ANSWER call's generalCallID
-  const answerCall = calls.find(c => String(c.disposition ?? "").toUpperCase() === "ANSWER") as Record<string, unknown> | undefined;
-  let callRecordResult: unknown = null;
-  if (answerCall?.generalCallID) {
-    const r = await fetch("https://api.binotel.com/api/4.0/stats/call-record.json", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key: bKey, secret: bSecret, generalCallID: Number(answerCall.generalCallID) }),
-    });
-    const rct = r.headers.get("content-type") ?? "";
-    if (rct.includes("application/json")) {
-      callRecordResult = { status: r.status, data: await r.json(), generalCallID: answerCall.generalCallID };
-    } else {
-      callRecordResult = { status: r.status, contentType: rct, body: (await r.text()).slice(0, 300) };
+  const probe = async (url: string, body: Record<string, unknown>) => {
+    try {
+      const r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const ct = r.headers.get("content-type") ?? "";
+      const text = await r.text();
+      let json: unknown = null;
+      try { json = JSON.parse(text); } catch { /* not json */ }
+      return { status: r.status, contentType: ct, json, text: json ? undefined : text.slice(0, 300) };
+    } catch (e) {
+      return { error: String(e) };
     }
-  }
+  };
+
+  const results = await Promise.all([
+    probe("https://api.binotel.com/api/4.0/stats/general-calls-for-period.json", payload),
+    probe("https://api.binotel.com/api/3.0/stats/general-calls-for-period.json", payload),
+    probe("https://api.binotel.com/api/4.0/stats/call-record-link.json", { key: bKey, secret: bSecret, generalCallID: 1 }),
+    probe("https://api.binotel.com/api/4.0/stats/call-record.json", { key: bKey, secret: bSecret, generalCallID: 1 }),
+    probe("https://api.binotel.com/api/4.0/company/get-balance.json", { key: bKey, secret: bSecret }),
+  ]);
 
   return NextResponse.json({
-    apiStatus: res.status,
-    rawData: data,
-    totalCalls: calls.length,
-    firstCall: calls[0] ?? null,
-    firstCallWithRecording: withRecording ?? null,
-    allFieldNames: calls[0] ? Object.keys(calls[0]) : [],
-    callRecordEndpoint: callRecordResult,
+    credentialsUsed: { bKeyLen: bKey.length, bSecretLen: bSecret.length },
+    "v4/general-calls-for-period": results[0],
+    "v3/general-calls-for-period": results[1],
+    "v4/call-record-link": results[2],
+    "v4/call-record": results[3],
+    "v4/company/get-balance": results[4],
   });
 }
 
