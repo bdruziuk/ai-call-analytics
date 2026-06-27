@@ -393,27 +393,46 @@ const API_STATUS_META: Record<string, { label: string; cls: string }> = {
 
 const API_LOG_PAGE_SIZE = 10;
 
-function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret }: {
+function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret, userId }: {
   apiKeys: ApiKeyRecord[];
   apiLogs: ApiLogRecord[];
   locale: string;
   binotelKey: string | null;
   binotelSecret: string | null;
+  userId: string;
 }) {
   const [logPage, setLogPage] = useState(1);
-  if (apiKeys.length === 0 && apiLogs.length === 0 && !binotelKey) return null;
+  const [logs, setLogs] = useState(apiLogs);
+  if (apiKeys.length === 0 && logs.length === 0 && !binotelKey) return null;
 
-  const totalPages = Math.max(1, Math.ceil(apiLogs.length / API_LOG_PAGE_SIZE));
+  async function handleClearLogs() {
+    if (!confirm("Delete all API request logs for this user?")) return;
+    const res = await fetch(`/api/admin/api-logs/${userId}`, { method: "DELETE" });
+    if (res.ok) setLogs([]);
+  }
+
+  const totalPages = Math.max(1, Math.ceil(logs.length / API_LOG_PAGE_SIZE));
   const pageStart  = (logPage - 1) * API_LOG_PAGE_SIZE;
-  const pageSlice  = apiLogs.slice(pageStart, pageStart + API_LOG_PAGE_SIZE);
+  const pageSlice  = logs.slice(pageStart, pageStart + API_LOG_PAGE_SIZE);
   const from       = pageStart + 1;
-  const to         = Math.min(logPage * API_LOG_PAGE_SIZE, apiLogs.length);
+  const to         = Math.min(logPage * API_LOG_PAGE_SIZE, logs.length);
 
   return (
     <div className="border-t border-slate-100">
-      <div className="flex items-center gap-2 bg-slate-50 px-5 py-2.5">
-        <Key size={12} className="text-slate-400" />
-        <span className="text-xs font-semibold text-slate-500">API</span>
+      <div className="flex items-center justify-between bg-slate-50 px-5 py-2.5">
+        <div className="flex items-center gap-2">
+          <Key size={12} className="text-slate-400" />
+          <span className="text-xs font-semibold text-slate-500">API</span>
+        </div>
+        {logs.length > 0 && (
+          <button
+            onClick={handleClearLogs}
+            className="flex items-center gap-1 rounded px-2 py-1 text-[10px] font-medium text-red-500 hover:bg-red-50 transition-colors"
+          >
+            <Trash2 size={10} />
+            Clear logs
+          </button>
+        )}
       </div>
 
       {/* Keys */}
@@ -449,7 +468,7 @@ function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret }: {
       )}
 
       {/* Request log */}
-      {apiLogs.length > 0 && (
+      {logs.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[480px] text-xs">
             <thead>
@@ -480,7 +499,7 @@ function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret }: {
           </table>
           {totalPages > 1 && (
             <div className="flex items-center justify-between border-t border-slate-100 px-5 py-2">
-              <span className="text-[10px] text-slate-400">{from}–{to} of {apiLogs.length}</span>
+              <span className="text-[10px] text-slate-400">{from}–{to} of {logs.length}</span>
               <div className="flex items-center gap-0.5">
                 {[
                   { label: "«", action: () => setLogPage(1),            disabled: logPage === 1 },
@@ -824,7 +843,7 @@ function UserRow({
           )}
 
           {/* API keys + request log */}
-          <ApiSection apiKeys={user.apiKeys} apiLogs={user.apiLogs} locale={locale} binotelKey={user.binotelKey} binotelSecret={user.binotelSecret} />
+          <ApiSection apiKeys={user.apiKeys} apiLogs={user.apiLogs} locale={locale} binotelKey={user.binotelKey} binotelSecret={user.binotelSecret} userId={user.id} />
         </div>
       )}
     </div>
