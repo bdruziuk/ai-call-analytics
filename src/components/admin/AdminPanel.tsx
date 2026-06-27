@@ -473,7 +473,7 @@ function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret, userI
           <table className="w-full min-w-[480px] text-xs">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/60">
-                {["Endpoint", "Status", "Code", "Date"].map((h) => (
+                {["Endpoint", "Status", "Code", "Date", ""].map((h) => (
                   <th key={h} className="px-3 py-1.5 text-left font-medium text-slate-400 first:pl-5 last:pr-4">{h}</th>
                 ))}
               </tr>
@@ -482,7 +482,7 @@ function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret, userI
               {pageSlice.map((log) => {
                 const meta = API_STATUS_META[log.status] ?? { label: log.status, cls: "bg-slate-100 text-slate-600 border-slate-200" };
                 return (
-                  <tr key={log.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                  <tr key={log.id} className="border-b border-slate-50 hover:bg-slate-50/50 group">
                     <td className="py-1.5 pl-5 pr-3 font-mono text-slate-600 capitalize">{log.endpoint}</td>
                     <td className="px-3 py-1.5">
                       <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${meta.cls}`}>
@@ -491,7 +491,18 @@ function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret, userI
                       </span>
                     </td>
                     <td className="px-3 py-1.5 font-mono text-slate-500">{log.statusCode}</td>
-                    <td className="px-3 py-1.5 pr-4 text-slate-400 whitespace-nowrap">{fmt(log.createdAt, locale)}</td>
+                    <td className="px-3 py-1.5 text-slate-400 whitespace-nowrap">{fmt(log.createdAt, locale)}</td>
+                    <td className="pr-4 py-1.5 text-right">
+                      <button
+                        onClick={async () => {
+                          await fetch(`/api/admin/api-logs/entry/${log.id}`, { method: "DELETE" });
+                          setLogs((prev) => prev.filter((l) => l.id !== log.id));
+                        }}
+                        className="invisible group-hover:visible rounded p-0.5 text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      >
+                        <Trash2 size={10} />
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
