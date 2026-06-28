@@ -112,7 +112,8 @@
     "saleStatus": {
       "sold": "Продано",
       "not_sold": "Не продано",
-      "potential_sale": "Потенциальная продажа"
+      "potential_sale": "Потенциальная продажа",
+      "junk": "Прочее"
     },
     "processingStatus": {
       "queued": "В очереди",
@@ -137,7 +138,8 @@
     "saleStatus": {
       "sold": "Продано",
       "not_sold": "Не продано",
-      "potential_sale": "Потенциальная продажа"
+      "potential_sale": "Потенциальная продажа",
+      "junk": "Прочее"
     },
     "source": "Источник"
   },
@@ -173,7 +175,8 @@
     "saleStatus": {
       "sold": "Продажа успешна",
       "not_sold": "Продажа не состоялась",
-      "potential_sale": "Потенциальная продажа"
+      "potential_sale": "Потенциальная продажа",
+      "junk": "Прочее"
     }
   },
   "processing": {
@@ -628,6 +631,7 @@
     "sold": "Продано",
     "notSold": "Не продано",
     "potential": "Потенциал",
+    "junk": "Прочее",
     "unknown": "Неизвестно",
     "errorGenerating": "Ошибка генерации отчёта. Попробуйте ещё раз.",
     "callsUnit": "звонков",

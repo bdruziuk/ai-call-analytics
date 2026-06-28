@@ -112,7 +112,8 @@
     "saleStatus": {
       "sold": "Продано",
       "not_sold": "Не продано",
-      "potential_sale": "Потенційний продаж"
+      "potential_sale": "Потенційний продаж",
+      "junk": "Інше"
     },
     "processingStatus": {
       "queued": "У черзі",
@@ -137,7 +138,8 @@
     "saleStatus": {
       "sold": "Продано",
       "not_sold": "Не продано",
-      "potential_sale": "Потенційний продаж"
+      "potential_sale": "Потенційний продаж",
+      "junk": "Інше"
     },
     "source": "Джерело"
   },
@@ -173,7 +175,8 @@
     "saleStatus": {
       "sold": "Продаж успішний",
       "not_sold": "Продаж не відбувся",
-      "potential_sale": "Потенційний продаж"
+      "potential_sale": "Потенційний продаж",
+      "junk": "Інше"
     }
   },
   "processing": {
@@ -628,6 +631,7 @@
     "sold": "Продано",
     "notSold": "Не продано",
     "potential": "Потенціал",
+    "junk": "Інше",
     "unknown": "Невідомо",
     "errorGenerating": "Помилка генерації звіту. Спробуйте ще раз.",
     "callsUnit": "дзвінків",

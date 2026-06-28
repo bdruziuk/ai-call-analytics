@@ -24,6 +24,7 @@ export type AnalyticsData = {
   sold: number;
   notSold: number;
   potential: number;
+  junk: number;
   topIssues:     { issue: string; count: number }[];
   topMistakes:   { mistake: string; count: number }[];
   topObjections: { objection: string; count: number }[];
@@ -331,10 +332,12 @@ export function AnalyticsClient({ t, lang, data, periodFrom, periodTo, viewAs }:
     ? Math.round((data.sold / withSaleStatus) * 100)
     : null;
 
+  const SLATE = "#94a3b8";
   const saleDistData = [
-    { name: ta.sold,     value: data.sold,      color: EMERALD },
-    { name: ta.notSold,  value: data.notSold,   color: RED     },
-    { name: ta.potential,value: data.potential,  color: AMBER   },
+    { name: ta.sold,      value: data.sold,      color: EMERALD },
+    { name: ta.notSold,   value: data.notSold,   color: RED     },
+    { name: ta.potential, value: data.potential,  color: AMBER   },
+    { name: ta.junk ?? "Інше", value: data.junk ?? 0, color: SLATE  },
   ].filter((d) => d.value > 0);
 
   const managerChartData = data.managers

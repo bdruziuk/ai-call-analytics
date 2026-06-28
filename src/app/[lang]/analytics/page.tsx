@@ -95,23 +95,26 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
     );
   }
 
-  // Sale distribution
-  let sold = 0, notSold = 0, potential = 0;
+  // Sale distribution (junk counted separately, excluded from business metrics)
+  let sold = 0, notSold = 0, potential = 0, junk = 0;
   for (const c of calls) {
     if (c.saleStatus === "sold")                sold++;
     else if (c.saleStatus === "not_sold")       notSold++;
     else if (c.saleStatus === "potential_sale") potential++;
+    else if (c.saleStatus === "junk")           junk++;
   }
 
-  // Average score
-  const scored   = calls.filter((c: CallRow) => c.score !== null);
+  const realCalls = calls.filter((c: CallRow) => c.saleStatus !== "junk");
+
+  // Average score (junk excluded)
+  const scored   = realCalls.filter((c: CallRow) => c.score !== null);
   const avgScore = scored.length
     ? Math.round((scored.reduce((s: number, c: CallRow) => s + c.score!, 0) / scored.length) * 10) / 10
     : null;
 
-  // Score trend (monthly)
+  // Score trend (monthly, junk excluded)
   const monthMap = new Map<string, { total: number; count: number }>();
-  for (const c of calls) {
+  for (const c of realCalls) {
     if (c.score === null) continue;
     const mo = c.createdAt.toISOString().slice(0, 7);
     const e  = monthMap.get(mo) ?? { total: 0, count: 0 };
@@ -125,12 +128,12 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
       count,
     }));
 
-  // Aggregate text arrays
+  // Aggregate text arrays (junk excluded)
   const allIssues:    string[] = [];
   const allMistakes:  string[] = [];
   const allObjections: string[] = [];
   const allProducts:   string[] = [];
-  for (const c of calls) {
+  for (const c of realCalls) {
     allIssues.push(...toArr(c.issues));
     allMistakes.push(...toArr(c.managerMistakes));
     allObjections.push(...toArr(c.objections));
@@ -141,13 +144,13 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
   const topObjections = topN(allObjections);
   const topProducts   = topN(allProducts);
 
-  // Per-manager stats
+  // Per-manager stats (junk excluded)
   const managerMap = new Map<string, {
     name: string; scores: number[];
     sold: number; total: number;
     issues: string[]; mistakes: string[];
   }>();
-  for (const c of calls) {
+  for (const c of realCalls) {
     const pid  = c.salesProfileId ?? "__unassigned__";
     const name = c.salesProfileId ? (profileMap.get(c.salesProfileId) ?? "Unknown") : "Unassigned";
     const m    = managerMap.get(pid) ?? { name, scores: [] as number[], sold: 0, total: 0, issues: [] as string[], mistakes: [] as string[] };
@@ -181,6 +184,7 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
     sold,
     notSold,
     potential,
+    junk,
     topIssues:     topIssues.map((x) => ({ issue: x.label, count: x.count })),
     topMistakes:   topMistakes.map((x) => ({ mistake: x.label, count: x.count })),
     topObjections: topObjections.map((x) => ({ objection: x.label, count: x.count })),

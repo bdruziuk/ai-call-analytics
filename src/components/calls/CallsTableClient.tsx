@@ -116,6 +116,7 @@ function SaleStatusBadge({ status, label }: { status: string | null; label: stri
     sold:           "bg-emerald-100 text-emerald-700",
     not_sold:       "bg-red-100 text-red-700",
     potential_sale: "bg-amber-100 text-amber-700",
+    junk:           "bg-slate-100 text-slate-500",
   };
   return <span className={`${base} ${map[status] ?? "bg-slate-100 text-slate-600"}`}>{label}</span>;
 }
@@ -176,6 +177,7 @@ export function CallsTableClient({ t, lang, initialCalls, initialNextCursor = nu
       case "sold":           return t.calls.saleStatus.sold;
       case "not_sold":       return t.calls.saleStatus.not_sold;
       case "potential_sale": return t.calls.saleStatus.potential_sale;
+      case "junk":           return t.calls.saleStatus.junk ?? "Інше";
       default: return "-";
     }
   }

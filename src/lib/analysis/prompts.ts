@@ -10,25 +10,29 @@ const baseRules: Record<AnalysisLanguage, string> = {
   uk: `Ти аналізуєш дзвінки інтернет-магазинів.
 Усі значення JSON пиши виключно українською мовою.
 Поверни ТІЛЬКИ валідний JSON. Без markdown. Без пояснень поза JSON.
-saleStatus може бути лише: "sold", "not_sold", "potential_sale".
+saleStatus може бути лише: "sold", "not_sold", "potential_sale", "junk".
+Використовуй "junk" якщо дзвінок не пов'язаний з діяльністю бізнесу: помилилися номером, пропонують послуги/рекламу, питають про вакансії, спам, мовчазний/технічний дзвінок.
 Якщо даних недостатньо — пиши "невідомо".`,
 
   ru: `Ты анализируешь звонки интернет-магазинов.
 Все значения JSON пиши исключительно на русском языке.
 Верни ТОЛЬКО валидный JSON. Без markdown. Без объяснений вне JSON.
-saleStatus может быть только: "sold", "not_sold", "potential_sale".
+saleStatus может быть только: "sold", "not_sold", "potential_sale", "junk".
+Используй "junk" если звонок не связан с деятельностью бизнеса: ошиблись номером, предлагают услуги/рекламу, спрашивают о вакансиях, спам, молчащий/технический звонок.
 Если данных недостаточно — пиши "неизвестно".`,
 
   en: `You analyze e-commerce store calls.
 Write all JSON values in English.
 Return ONLY valid JSON. No markdown. No explanations outside JSON.
-saleStatus must be one of: "sold", "not_sold", "potential_sale".
+saleStatus must be one of: "sold", "not_sold", "potential_sale", "junk".
+Use "junk" if the call is unrelated to the business: wrong number, sales pitches, job inquiries, spam, silent or technical calls.
 If data is insufficient — write "unknown".`,
 
   uk_ru: `Ти аналізуєш дзвінки інтернет-магазинів, в яких спілкування ведеться українською та/або російською мовою.
 Усі значення JSON пиши українською мовою.
 Поверни ТІЛЬКИ валідний JSON. Без markdown. Без пояснень поза JSON.
-saleStatus може бути лише: "sold", "not_sold", "potential_sale".
+saleStatus може бути лише: "sold", "not_sold", "potential_sale", "junk".
+Використовуй "junk" якщо дзвінок не пов'язаний з діяльністю бізнесу: помилилися номером, пропонують послуги/рекламу, питають про вакансії, спам, мовчазний/технічний дзвінок.
 Якщо даних недостатньо — пиши "невідомо".`,
 };
 
@@ -83,7 +87,7 @@ const jsonSchema: Record<ReportType, string> = {
   high_level: `{
   "summary": "brief 1-2 sentence call summary",
   "product": "product or service discussed",
-  "saleStatus": "sold | not_sold | potential_sale",
+  "saleStatus": "sold | not_sold | potential_sale | junk",
   "customerIntent": "customer intent",
   "nextStep": "recommended next step",
   "score": <number 1-10>,
@@ -95,7 +99,7 @@ const jsonSchema: Record<ReportType, string> = {
   medium: `{
   "summary": "call summary",
   "product": "product or service",
-  "saleStatus": "sold | not_sold | potential_sale",
+  "saleStatus": "sold | not_sold | potential_sale | junk",
   "customerIntent": "customer intent",
   "nextStep": "recommended next step",
   "score": <number 1-10>,
@@ -109,7 +113,7 @@ const jsonSchema: Record<ReportType, string> = {
   detailed: `{
   "summary": "detailed call summary",
   "product": "product or service",
-  "saleStatus": "sold | not_sold | potential_sale",
+  "saleStatus": "sold | not_sold | potential_sale | junk",
   "customerIntent": "customer intent",
   "nextStep": "recommended next step",
   "score": <number 1-10>,

@@ -112,7 +112,8 @@
     "saleStatus": {
       "sold": "Sold",
       "not_sold": "Not sold",
-      "potential_sale": "Potential sale"
+      "potential_sale": "Potential sale",
+      "junk": "Other"
     },
     "processingStatus": {
       "queued": "Queued",
@@ -137,7 +138,8 @@
     "saleStatus": {
       "sold": "Sold",
       "not_sold": "Not sold",
-      "potential_sale": "Potential sale"
+      "potential_sale": "Potential sale",
+      "junk": "Other"
     },
     "source": "Source"
   },
@@ -173,7 +175,8 @@
     "saleStatus": {
       "sold": "Sale successful",
       "not_sold": "Sale did not happen",
-      "potential_sale": "Potential sale"
+      "potential_sale": "Potential sale",
+      "junk": "Other"
     }
   },
   "processing": {
@@ -628,6 +631,7 @@
     "sold": "Sold",
     "notSold": "Not Sold",
     "potential": "Potential",
+    "junk": "Other",
     "unknown": "Unknown",
     "errorGenerating": "Failed to generate report. Please try again.",
     "callsUnit": "calls",

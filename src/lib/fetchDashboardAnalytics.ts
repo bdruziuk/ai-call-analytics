@@ -45,21 +45,23 @@ export async function fetchOwnerAnalytics(userId: string): Promise<OwnerAnalytic
 
   const profileMap = new Map(profiles.map((p) => [p.id, p.name]));
 
-  // ── Current period KPIs ─────────────────────────────────────────────────
-  const total    = currentCalls.length;
-  const sold     = currentCalls.filter((c) => c.saleStatus === "sold").length;
-  const critical = currentCalls.filter((c) => (c.score ?? 10) <= 3);
-  const notSold  = currentCalls.filter((c) => c.saleStatus === "not_sold" && (c.score ?? 10) < 5).length;
-  const upsellCalls = currentCalls.filter((c) => {
+  // ── Current period KPIs (junk excluded from all business metrics) ───────
+  const realCalls = currentCalls.filter((c) => c.saleStatus !== "junk");
+  const total     = realCalls.length;
+  const sold      = realCalls.filter((c) => c.saleStatus === "sold").length;
+  const critical  = realCalls.filter((c) => (c.score ?? 10) <= 3);
+  const notSold   = realCalls.filter((c) => c.saleStatus === "not_sold" && (c.score ?? 10) < 5).length;
+  const upsellCalls = realCalls.filter((c) => {
     const mistakes = toArr(c.managerMistakes);
     return mistakes.some((m) => /upsell|допродаж|cross/i.test(m));
   }).length;
 
   // ── Previous period KPIs ────────────────────────────────────────────────
-  const prevTotal    = prevCalls.length;
-  const prevSold     = prevCalls.filter((c) => c.saleStatus === "sold").length;
-  const prevCritical = prevCalls.filter((c) => (c.score ?? 10) <= 3).length;
-  const prevNotSold  = prevCalls.filter((c) => c.saleStatus === "not_sold" && (c.score ?? 10) < 5).length;
+  const prevRealCalls = prevCalls.filter((c) => c.saleStatus !== "junk");
+  const prevTotal     = prevRealCalls.length;
+  const prevSold      = prevRealCalls.filter((c) => c.saleStatus === "sold").length;
+  const prevCritical  = prevRealCalls.filter((c) => (c.score ?? 10) <= 3).length;
+  const prevNotSold   = prevRealCalls.filter((c) => c.saleStatus === "not_sold" && (c.score ?? 10) < 5).length;
 
   const convRate     = pct(sold, total);
   const prevConvRate = pct(prevSold, prevTotal);
@@ -80,7 +82,7 @@ export async function fetchOwnerAnalytics(userId: string): Promise<OwnerAnalytic
 
   // ── Operator KPIs ───────────────────────────────────────────────────────
   const opMap = new Map<string, { scores: number[]; sold: number; total: number; durations: number[]; upsells: number }>();
-  for (const c of currentCalls) {
+  for (const c of realCalls) {
     const opId = c.salesProfileId ?? "__none__";
     if (!opMap.has(opId)) opMap.set(opId, { scores: [], sold: 0, total: 0, durations: [], upsells: 0 });
     const op = opMap.get(opId)!;
