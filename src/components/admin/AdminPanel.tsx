@@ -539,6 +539,28 @@ function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret, userI
 
 /* ── Single user row ──────────────────────────────────────────────────────── */
 
+type PeriodKey = "all" | "month" | "week" | "3days" | "today";
+const PERIOD_OPTIONS: { key: PeriodKey; labelKey: string; ms: number | null }[] = [
+  { key: "all",   labelKey: "periodAll",   ms: null },
+  { key: "month", labelKey: "periodMonth", ms: 30 * 86400_000 },
+  { key: "week",  labelKey: "periodWeek",  ms: 7  * 86400_000 },
+  { key: "3days", labelKey: "period3days", ms: 3  * 86400_000 },
+  { key: "today", labelKey: "periodToday", ms: 0 },
+];
+
+function filterByPeriod(calls: CallRecord[], period: PeriodKey): CallRecord[] {
+  if (period === "all") return calls;
+  const now = Date.now();
+  if (period === "today") {
+    const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+    return calls.filter((c) => new Date(c.createdAt) >= midnight);
+  }
+  const opt = PERIOD_OPTIONS.find((p) => p.key === period);
+  if (!opt?.ms) return calls;
+  const cutoff = now - opt.ms;
+  return calls.filter((c) => new Date(c.createdAt).getTime() >= cutoff);
+}
+
 function UserRow({
   user, t, locale, lang, onDelete, onCallRemoved,
 }: {
@@ -554,6 +576,7 @@ function UserRow({
   const [deleting, setDeleting]         = useState(false);
   const [profiles, setProfiles]               = useState(user.salesProfiles);
   const [deletingProfile, setDeletingProfile] = useState<string | null>(null);
+  const [period, setPeriod]             = useState<PeriodKey>("all");
   // Local mirror of user.calls — updated when calls are deleted so
   // all derived counts (total, in-progress, failed, unassigned) stay accurate.
   const [localCalls, setLocalCalls] = useState(user.calls);
@@ -564,10 +587,11 @@ function UserRow({
     onCallRemoved(callId);
   }
 
-  const inProgress  = localCalls.filter((c) => IN_PROGRESS.includes(c.status)).length;
-  const failed      = localCalls.filter((c) => c.status === "failed").length;
-  const assignedIds = new Set(profiles.map((p) => p.id));
-  const unassigned  = localCalls.filter((c) => !c.salesProfileId || !assignedIds.has(c.salesProfileId));
+  const filteredCalls = filterByPeriod(localCalls, period);
+  const inProgress    = filteredCalls.filter((c) => IN_PROGRESS.includes(c.status)).length;
+  const failed        = filteredCalls.filter((c) => c.status === "failed").length;
+  const assignedIds   = new Set(profiles.map((p) => p.id));
+  const unassigned    = filteredCalls.filter((c) => !c.salesProfileId || !assignedIds.has(c.salesProfileId));
   const initials   = (user.name || user.email)[0].toUpperCase();
 
   async function handleTestToggle(e: React.ChangeEvent<HTMLInputElement>) {
@@ -699,7 +723,8 @@ function UserRow({
             </span>
             <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
               <PhoneCall size={11} />
-              {localCalls.length}
+              {filteredCalls.length}
+              {period !== "all" && <span className="text-slate-400">/ {localCalls.length}</span>}
             </span>
             {inProgress > 0 && (
               <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 border border-amber-200">
@@ -797,6 +822,31 @@ function UserRow({
       {/* ── Expanded content ── */}
       {open && (
         <div className="border-t border-slate-100">
+          {/* Period filter */}
+          <div className="flex flex-wrap items-center gap-1.5 px-5 py-2.5 border-b border-slate-100 bg-slate-50/60">
+            {PERIOD_OPTIONS.map(({ key, labelKey }) => {
+              const label = (t.analytics as Record<string, string>)[labelKey] ?? labelKey;
+              return (
+                <button
+                  key={key}
+                  onClick={() => setPeriod(key)}
+                  className={`rounded-full px-3 py-1 text-[11px] font-medium transition-colors ${
+                    period === key
+                      ? "bg-brand-600 text-white"
+                      : "bg-white border border-slate-200 text-slate-500 hover:border-brand-300 hover:text-brand-600"
+                  }`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+            {period !== "all" && (
+              <span className="ml-1 text-[11px] text-slate-400">
+                {filteredCalls.length} з {localCalls.length} дзвінків
+              </span>
+            )}
+          </div>
+
           {/* Profiles */}
           {profiles.length > 0 ? (
             profiles.map((profile) => (
@@ -831,7 +881,7 @@ function UserRow({
                   </button>
                 </div>
                 <CallsTable
-                  calls={profile.calls}
+                  calls={filterByPeriod(profile.calls, period)}
                   t={t}
                   locale={locale}
                   onCallDeleted={(callId) => {
