@@ -19,10 +19,11 @@ function fmtDate(d: Date) {
   return `${String(d.getDate()).padStart(2, "0")}.${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export async function fetchOwnerAnalytics(userId: string): Promise<OwnerAnalytics> {
+export async function fetchOwnerAnalytics(userId: string, since: Date | null = null): Promise<OwnerAnalytics> {
   const now = new Date();
-  const periodStart = new Date(now.getTime() - 30 * 86400_000);
-  const prevStart   = new Date(now.getTime() - 60 * 86400_000);
+  const periodStart = since ?? new Date(now.getTime() - 30 * 86400_000);
+  const periodMs    = since ? (now.getTime() - since.getTime()) : 30 * 86400_000;
+  const prevStart   = new Date(periodStart.getTime() - periodMs);
 
   const [currentCalls, prevCalls, profiles] = await Promise.all([
     db.call.findMany({
@@ -144,9 +145,11 @@ export async function fetchOwnerAnalytics(userId: string): Promise<OwnerAnalytic
   };
 }
 
-export async function fetchMarketerAnalytics(userId: string): Promise<MarketerAnalytics> {
-  const periodStart = new Date(Date.now() - 30 * 86400_000);
-  const prevStart   = new Date(Date.now() - 60 * 86400_000);
+export async function fetchMarketerAnalytics(userId: string, since: Date | null = null): Promise<MarketerAnalytics> {
+  const now         = Date.now();
+  const periodStart = since ?? new Date(now - 30 * 86400_000);
+  const periodMs    = since ? (now - since.getTime()) : 30 * 86400_000;
+  const prevStart   = new Date(periodStart.getTime() - periodMs);
 
   const [currentCalls, prevCalls] = await Promise.all([
     db.call.findMany({

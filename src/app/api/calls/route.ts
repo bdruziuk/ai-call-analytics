@@ -14,6 +14,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const cursor  = searchParams.get('cursor');
   const viewAs  = searchParams.get('viewAs');
+  const period  = searchParams.get('period') ?? '';
   const limit   = Math.min(
     parseInt(searchParams.get('limit') ?? String(PAGE_SIZE), 10),
     100,
@@ -22,10 +23,27 @@ export async function GET(request: Request) {
   const { resolveUserId } = await import("@/lib/adminViewAs");
   const userId = await resolveUserId(session.user.id, session.user.email, viewAs ?? undefined);
 
+  function periodSince(p: string): Date | null {
+    const now = new Date();
+    switch (p) {
+      case 'today': { const d = new Date(now); d.setHours(0, 0, 0, 0); return d; }
+      case '3days': return new Date(now.getTime() - 3  * 86400_000);
+      case 'week':  return new Date(now.getTime() - 7  * 86400_000);
+      case 'month': return new Date(now.getTime() - 30 * 86400_000);
+      default:      return null;
+    }
+  }
+  const since = periodSince(period);
+
+  const createdAtFilter = {
+    ...(since  ? { gte: since }              : {}),
+    ...(cursor ? { lt: new Date(cursor) }    : {}),
+  };
+
   const calls = await db.call.findMany({
     where: {
       userId,
-      ...(cursor ? { createdAt: { lt: new Date(cursor) } } : {}),
+      ...(Object.keys(createdAtFilter).length ? { createdAt: createdAtFilter } : {}),
     },
     orderBy: { createdAt: 'desc' },
     take: limit + 1,   // fetch one extra to detect whether there is a next page

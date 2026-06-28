@@ -34,6 +34,16 @@ type SalesProfile = {
   photo: string | null;
 };
 
+type PeriodKey = "all" | "month" | "week" | "3days" | "today";
+
+const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
+  { key: "all",   label: "Увесь час"      },
+  { key: "month", label: "Місяць"         },
+  { key: "week",  label: "Тиждень"        },
+  { key: "3days", label: "3 дні"          },
+  { key: "today", label: "Сьогодні"       },
+];
+
 type Props = {
   t: Dictionary;
   lang: string;
@@ -134,6 +144,9 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
   const isFree    = !isTestAccount && planId === "free";
   const isStarter = !isTestAccount && planId === "starter";
 
+  const [period, setPeriod]         = useState<PeriodKey>("month");
+  const [analyticsData, setAnalyticsData] = useState<{ ownerAnalytics: OwnerAnalytics; marketerAnalytics: MarketerAnalytics }>({ ownerAnalytics, marketerAnalytics });
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [calls, setCalls]           = useState<CallItem[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -218,9 +231,34 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
     }
   }
 
+  async function loadAnalytics(p: PeriodKey) {
+    setAnalyticsLoading(true);
+    try {
+      const qs = new URLSearchParams({ period: p, ...(viewAs ? { viewAs } : {}) });
+      const res = await fetch(`/api/dashboard/analytics?${qs}`, { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setAnalyticsData(data);
+      }
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }
+
+  async function loadCallsForPeriod(p: PeriodKey) {
+    const qs = new URLSearchParams({ limit: "30", ...(p !== "all" ? { period: p } : {}), ...(viewAs ? { viewAs } : {}) });
+    const res = await fetch(`/api/calls?${qs}`, { cache: "no-store" });
+    if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
+    const { calls: fresh, nextCursor: nc }: { calls: CallItem[]; nextCursor: string | null } =
+      await res.json();
+    setCalls(fresh);
+    setNextCursor(nc);
+  }
+
   // Loads the first page and merges into state (preserving older calls already scrolled in).
   async function loadCalls() {
-    const res = await fetch(`/api/calls?limit=30${viewAs ? `&viewAs=${viewAs}` : ""}`, { cache: "no-store" });
+    const qs = new URLSearchParams({ limit: "30", ...(period !== "all" ? { period } : {}), ...(viewAs ? { viewAs } : {}) });
+    const res = await fetch(`/api/calls?${qs}`, { cache: "no-store" });
     if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
     const { calls: fresh, nextCursor: nc }: { calls: CallItem[]; nextCursor: string | null } =
       await res.json();
@@ -236,7 +274,8 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
     if (!nextCursor || loadingMore) return;
     setLoadingMore(true);
     try {
-      const res = await fetch(`/api/calls?cursor=${encodeURIComponent(nextCursor)}&limit=30${viewAs ? `&viewAs=${viewAs}` : ""}`);
+      const qs = new URLSearchParams({ cursor: nextCursor, limit: "30", ...(period !== "all" ? { period } : {}), ...(viewAs ? { viewAs } : {}) });
+      const res = await fetch(`/api/calls?${qs}`);
       if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
       const { calls: more, nextCursor: nc }: { calls: CallItem[]; nextCursor: string | null } =
         await res.json();
@@ -329,11 +368,18 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
     }
   }
 
+  async function handlePeriodChange(p: PeriodKey) {
+    setPeriod(p);
+    await Promise.all([loadCallsForPeriod(p), loadAnalytics(p)]);
+  }
+
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    void loadCalls(); // async — state updates happen inside the resolved promise
+    // Initial load with default period ("month")
+    void loadCalls();
+    void loadAnalytics("month");
     const id = window.setInterval(() => void loadCalls(), 3000);
     return () => window.clearInterval(id);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const filteredCalls = filterProfileId
@@ -358,35 +404,61 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
         <p className="mt-1 text-sm text-slate-500">{t.dashboard.subtitle}</p>
       </div>
 
-      {/* ── Tab nav ── */}
-      <div className="mb-6 flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1 md:mb-8">
-        {([
-          { id: "calls"    as const, label: "📞 Дзвінки"           },
-          { id: "owner"    as const, label: "👔 Власник / Директор" },
-          { id: "marketer" as const, label: "📣 Маркетолог"         },
-        ]).map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors sm:text-sm ${
-              activeTab === id
-                ? "bg-white shadow-sm text-slate-900"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      {/* ── Tab nav + period filter ── */}
+      <div className="mb-4 flex flex-col gap-3 md:mb-6">
+        <div className="flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
+          {([
+            { id: "calls"    as const, label: "📞 Дзвінки"           },
+            { id: "owner"    as const, label: "👔 Власник / Директор" },
+            { id: "marketer" as const, label: "📣 Маркетолог"         },
+          ]).map(({ id, label }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`flex-1 rounded-lg px-3 py-2 text-xs font-semibold transition-colors sm:text-sm ${
+                activeTab === id
+                  ? "bg-white shadow-sm text-slate-900"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Period filter */}
+        <div className="flex flex-wrap gap-2">
+          {PERIOD_OPTIONS.map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => void handlePeriodChange(key)}
+              disabled={analyticsLoading}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-60 ${
+                period === key
+                  ? "bg-brand-600 text-white"
+                  : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+          {analyticsLoading && (
+            <span className="flex items-center gap-1.5 text-xs text-slate-400">
+              <Loader2 size={12} className="animate-spin" />
+              Оновлення…
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ── Owner dashboard ── */}
       {activeTab === "owner" && (
-        <OwnerDashboard data={ownerAnalytics} lang={lang} />
+        <OwnerDashboard data={analyticsData.ownerAnalytics} lang={lang} />
       )}
 
       {/* ── Marketer dashboard ── */}
       {activeTab === "marketer" && (
-        <MarketerDashboard data={marketerAnalytics} />
+        <MarketerDashboard data={analyticsData.marketerAnalytics} />
       )}
 
       {/* ── Calls tab (existing functionality) ── */}
