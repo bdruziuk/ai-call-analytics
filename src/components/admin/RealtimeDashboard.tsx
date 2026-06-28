@@ -25,9 +25,11 @@ type Stats = {
   totalUsers: number;
   totalCalls: number;
   totalMinutes: number;
+  minutesToday: number;
   activeNow: number;
   callsToday: number;
   totalApiCalls: number;
+  apiCallsToday: number;
 };
 
 type DayPoint  = { hour: number; label: string; count: number; api: number };
@@ -338,18 +340,50 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
       </div>
 
       {/* ── Stats strip ── */}
-      <div className="grid grid-cols-6 gap-2 px-3 py-2 shrink-0">
+      <div className="grid grid-cols-5 gap-2 px-3 py-2 shrink-0">
         {[
-          { label: "Accounts",   value: stats?.totalUsers ?? "—",                             accent: "" },
-          { label: "Total Calls",value: stats?.totalCalls ?? "—",                             accent: "" },
-          { label: "Minutes",    value: stats ? stats.totalMinutes.toLocaleString() : "—",    accent: "" },
-          { label: "Today",      value: stats?.callsToday ?? "—",                             accent: "text-brand-600" },
-          { label: "API Calls",  value: stats?.totalApiCalls ?? "—",                           accent: "text-amber-600" },
-          { label: "Processing", value: stats?.activeNow ?? "—",                              accent: stats && stats.activeNow > 0 ? "text-amber-600" : "" },
-        ].map(({ label, value, accent }) => (
+          {
+            label: "Accounts",
+            total: stats?.totalUsers ?? "—",
+            today: null,
+            accent: "",
+          },
+          {
+            label: "Total Calls",
+            total: stats?.totalCalls ?? "—",
+            today: stats?.callsToday ?? "—",
+            accent: "text-brand-600",
+          },
+          {
+            label: "Minutes",
+            total: stats ? stats.totalMinutes.toLocaleString() : "—",
+            today: stats ? stats.minutesToday.toLocaleString() : "—",
+            accent: "",
+          },
+          {
+            label: "API Calls",
+            total: stats?.totalApiCalls ?? "—",
+            today: stats?.apiCallsToday ?? "—",
+            accent: "text-amber-600",
+          },
+          {
+            label: "Processing",
+            total: stats?.activeNow ?? "—",
+            today: null,
+            accent: stats && stats.activeNow > 0 ? "text-amber-600" : "",
+          },
+        ].map(({ label, total, today, accent }) => (
           <div key={label} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm">
             <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">{label}</p>
-            <p className={`text-xl font-bold tabular-nums leading-tight ${accent || "text-slate-900"}`}>{value}</p>
+            {today !== null ? (
+              <p className="text-xl font-bold tabular-nums leading-tight text-slate-900">
+                {total}
+                <span className="text-slate-300 font-normal mx-0.5">/</span>
+                <span className={`text-base ${accent || "text-slate-500"}`}>{today}</span>
+              </p>
+            ) : (
+              <p className={`text-xl font-bold tabular-nums leading-tight ${accent || "text-slate-900"}`}>{total}</p>
+            )}
           </div>
         ))}
       </div>

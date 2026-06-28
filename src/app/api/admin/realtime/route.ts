@@ -38,7 +38,7 @@ export async function GET(request: Request) {
           const todayStart = new Date();
           todayStart.setHours(0, 0, 0, 0);
 
-          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday, totalApiCalls, callsTodayRaw, apiLogs, apiTodayRaw, allUsers] =
+          const [recentCalls, totalUsers, totalCalls, minutesAgg, activeNow, callsToday, totalApiCalls, apiCallsToday, minutesTodayAgg, callsTodayRaw, apiLogs, apiTodayRaw, allUsers] =
             await Promise.all([
               db.call.findMany({
                 orderBy: { createdAt: "desc" },
@@ -63,6 +63,8 @@ export async function GET(request: Request) {
               }),
               db.call.count({ where: { createdAt: { gte: todayStart } } }),
               db.apiLog.count(),
+              db.apiLog.count({ where: { createdAt: { gte: todayStart } } }),
+              db.call.aggregate({ _sum: { durationSeconds: true }, where: { createdAt: { gte: todayStart }, status: "completed" } }),
               // Last 48h of calls — client will filter to its local today and bucket by local hour
               db.call.findMany({
                 where: { createdAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) } },
@@ -108,9 +110,11 @@ export async function GET(request: Request) {
               totalUsers,
               totalCalls,
               totalMinutes: minutesAgg._sum.minutesUsed ?? 0,
+              minutesToday: Math.round((minutesTodayAgg._sum.durationSeconds ?? 0) / 60),
               activeNow,
               callsToday,
               totalApiCalls,
+              apiCallsToday,
             },
             todayTimestamps,
             apiLogs: apiLogs.map((l) => {
