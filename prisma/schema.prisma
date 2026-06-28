@@ -158,5 +158,5 @@ model Call {
 
   @@index([status])
   @@index([userId, status, createdAt(sort: Desc)])
-  @@index([userId, externalId])
+  @@unique([userId, externalId])
 }

@@ -70,9 +70,18 @@ export async function downloadAndQueueRecording(opts: {
   const filePath = path.join(uploadDir, safeFileName);
   await writeFile(filePath, audioBuffer);
 
-  const call = await db.call.create({
-    data: { fileName: baseName, filePath, status: "queued", reportType, userId, source: prefix, internalNumber, salesProfileId, externalId },
-  });
+  let call: Awaited<ReturnType<typeof db.call.create>>;
+  try {
+    call = await db.call.create({
+      data: { fileName: baseName, filePath, status: "queued", reportType, userId, source: prefix, internalNumber, salesProfileId, externalId },
+    });
+  } catch (err) {
+    // P2002 = unique constraint violation: another concurrent request already created this call
+    if ((err as { code?: string }).code === "P2002") {
+      return { skipped: true, reason: "duplicate" };
+    }
+    throw err;
+  }
 
   // Enqueue through the concurrency limiter — processCall deletes the file when done
   enqueueCall(call.id, prefix);

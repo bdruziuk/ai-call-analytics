@@ -100,20 +100,26 @@ export async function POST(request: Request) {
   // Recording still uploading — upsert processing record and ask Binotel to retry
   if (recordingStatus === "uploading") {
     if (!existing) {
-      await db.call.create({
-        data: {
-          userId: auth.userId,
-          externalId: generalCallID,
-          source: "binotel",
-          status: "processing",
-          reportType,
-          fileName: `${generalCallID}.mp3`,
-          filePath: "",
-          internalNumber,
-          salesProfileId,
-        },
-      });
-      console.log("[binotel] generalCallID:", generalCallID, "— created processing record, waiting for upload");
+      try {
+        await db.call.create({
+          data: {
+            userId: auth.userId,
+            externalId: generalCallID,
+            source: "binotel",
+            status: "processing",
+            reportType,
+            fileName: `${generalCallID}.mp3`,
+            filePath: "",
+            internalNumber,
+            salesProfileId,
+          },
+        });
+        console.log("[binotel] generalCallID:", generalCallID, "— created processing record, waiting for upload");
+      } catch (err) {
+        // P2002: another concurrent request already created the placeholder — that's fine
+        if ((err as { code?: string }).code !== "P2002") throw err;
+        console.log("[binotel] generalCallID:", generalCallID, "— processing record already exists (race), skipping create");
+      }
     } else {
       await db.call.update({
         where: { id: existing.id },
@@ -139,11 +145,24 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Delete the processing placeholder BEFORE creating the real call record.
+    // This frees the unique (userId, externalId) slot so downloadAndQueueRecording can use it.
+    // If a concurrent request already deleted it, that's fine — we still proceed.
+    if (existing) {
+      try {
+        await db.call.delete({ where: { id: existing.id } });
+      } catch {
+        // Already deleted by a concurrent request — that request owns the download; skip this one.
+        logApiRequest(auth.userId, "binotel", "duplicate", 200);
+        return NextResponse.json({ skipped: true, reason: "duplicate_in_progress" });
+      }
+    }
+
     const result = await downloadAndQueueRecording({ recordingUrl: s3Url, reportType, userId: auth.userId, prefix: "binotel", internalNumber, salesProfileId, externalId: generalCallID });
 
-    // Remove the temporary processing placeholder now that the real call record exists
-    if (existing && "id" in result) {
-      await db.call.delete({ where: { id: existing.id } });
+    if ("skipped" in result && result.skipped && result.reason === "duplicate") {
+      logApiRequest(auth.userId, "binotel", "duplicate", 200);
+      return NextResponse.json({ skipped: true, reason: "duplicate" });
     }
 
     logApiRequest(auth.userId, "binotel", "success", 200);
