@@ -32,8 +32,9 @@ type Stats = {
   apiCallsToday: number;
 };
 
-type DayPoint  = { hour: number; label: string; count: number; api: number };
-type TodayTimestamps = { calls: string[]; api: string[] };
+type DayPoint  = { hour: number; label: string; success: number; error: number; duplicate: number; cancelled: number; junk: number };
+type ApiByCategory = { success: string[]; error: string[]; duplicate: string[]; cancelled: string[]; junk: string[] };
+type TodayTimestamps = { calls: string[]; api: ApiByCategory };
 
 type ApiLogEntry = {
   id: string;
@@ -192,7 +193,7 @@ function Panel({ title, sub, right, children, className = "" }: {
 export function RealtimeDashboard({ lang }: { lang: string }) {
   const [calls, setCalls]                   = useState<CallEntry[]>([]);
   const [stats, setStats]                   = useState<Stats | null>(null);
-  const [todayTimestamps, setTodayTimestamps] = useState<TodayTimestamps>({ calls: [], api: [] });
+  const [todayTimestamps, setTodayTimestamps] = useState<TodayTimestamps>({ calls: [], api: { success: [], error: [], duplicate: [], cancelled: [], junk: [] } });
   const [apiLogs, setApiLogs]         = useState<ApiLogEntry[]>([]);
   const [callsPage, setCallsPage]     = useState(1);
   const [apiPage, setApiPage]         = useState(1);
@@ -262,21 +263,22 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
     const now           = new Date();
     const localMidnight = new Date(now); localMidnight.setHours(0, 0, 0, 0);
     const currentHour   = now.getHours();
-    const hourMap: Record<number, { count: number; api: number }> = {};
-    for (let h = 0; h <= currentHour; h++) hourMap[h] = { count: 0, api: 0 };
-    for (const iso of todayTimestamps.calls) {
+    const empty = () => ({ success: 0, error: 0, duplicate: 0, cancelled: 0, junk: 0 });
+    const hourMap: Record<number, ReturnType<typeof empty>> = {};
+    for (let h = 0; h <= currentHour; h++) hourMap[h] = empty();
+    const addIso = (iso: string, key: keyof ReturnType<typeof empty>) => {
       const d = new Date(iso);
-      if (d >= localMidnight) { const h = d.getHours(); if (h in hourMap) hourMap[h].count++; }
-    }
-    for (const iso of todayTimestamps.api) {
-      const d = new Date(iso);
-      if (d >= localMidnight) { const h = d.getHours(); if (h in hourMap) hourMap[h].api++; }
-    }
+      if (d >= localMidnight) { const h = d.getHours(); if (h in hourMap) hourMap[h][key]++; }
+    };
+    for (const iso of todayTimestamps.api.success)   addIso(iso, "success");
+    for (const iso of todayTimestamps.api.error)     addIso(iso, "error");
+    for (const iso of todayTimestamps.api.duplicate) addIso(iso, "duplicate");
+    for (const iso of todayTimestamps.api.cancelled) addIso(iso, "cancelled");
+    for (const iso of todayTimestamps.api.junk)      addIso(iso, "junk");
     return Object.entries(hourMap).map(([k, v]) => ({
       hour: Number(k),
       label: `${String(k).padStart(2, "0")}:00`,
-      count: v.count,
-      api: v.api,
+      ...v,
     }));
   })();
 
@@ -395,58 +397,69 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
         <div className="col-span-2 flex flex-col gap-2 min-h-0">
 
           {/* Chart */}
-          <Panel
-            title="Today's Activity"
-            sub="calls &amp; API by hour"
-            right={chartData.length > 0
-              ? `peak ${Math.max(...chartData.map((d) => d.count))} calls · ${Math.max(...chartData.map((d) => d.api))} api`
-              : undefined}
-            className="shrink-0 h-44"
-          >
-            <div className="flex-1 min-h-0 px-1 py-2">
-              {chartData.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-xs text-slate-300">Loading…</div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData} margin={{ top: 6, right: 12, left: -18, bottom: 0 }}>
-                    <CartesianGrid vertical={false} stroke="#f1f5f9" />
-                    <XAxis
-                      dataKey="label"
-                      tickLine={false} axisLine={false}
-                      tick={{ fontSize: 9, fill: "#94a3b8" }}
-                      interval={Math.max(0, Math.floor(chartData.length / 6) - 1)}
-                    />
-                    <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: "#94a3b8" }} allowDecimals={false} width={24} />
-                    <Tooltip
-                      contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #e2e8f0" }}
-                      labelFormatter={(v) => String(v)}
-                      formatter={(v, name) => [v ?? 0, name === "count" ? "Calls" : "API requests"]}
-                    />
-                    <Legend
-                      iconType="circle" iconSize={7}
-                      formatter={(value) => (
-                        <span style={{ fontSize: 10, color: "#64748b" }}>
-                          {value === "count" ? "Calls" : "API requests"}
-                        </span>
-                      )}
-                    />
-                    <Line
-                      dataKey="count" name="count"
-                      stroke="#1C78AE" strokeWidth={2}
-                      dot={<Dot r={3} fill="#1C78AE" stroke="#fff" strokeWidth={1} />}
-                      activeDot={{ r: 5 }}
-                    />
-                    <Line
-                      dataKey="api" name="api"
-                      stroke="#f59e0b" strokeWidth={2}
-                      dot={<Dot r={3} fill="#f59e0b" stroke="#fff" strokeWidth={1} />}
-                      activeDot={{ r: 5 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              )}
-            </div>
-          </Panel>
+          {(() => {
+            const LINES: { key: keyof typeof chartData[0]; label: string; color: string }[] = [
+              { key: "success",   label: "Опрацьовані", color: "#16a34a" },
+              { key: "error",     label: "Помилки",     color: "#dc2626" },
+              { key: "duplicate", label: "Дублікати",   color: "#f59e0b" },
+              { key: "cancelled", label: "Відмінені",   color: "#94a3b8" },
+              { key: "junk",      label: "Junk",        color: "#a855f7" },
+            ];
+            const totalToday = chartData.reduce((s, d) =>
+              s + (d.success + d.error + d.duplicate + d.cancelled + d.junk), 0);
+            return (
+              <Panel
+                title="Today's Activity"
+                sub="API requests by category · by hour"
+                right={chartData.length > 0 ? `${totalToday} total` : undefined}
+                className="shrink-0 h-48"
+              >
+                <div className="flex-1 min-h-0 px-1 py-2">
+                  {chartData.length === 0 ? (
+                    <div className="flex h-full items-center justify-center text-xs text-slate-300">Loading…</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData} margin={{ top: 6, right: 12, left: -18, bottom: 0 }}>
+                        <CartesianGrid vertical={false} stroke="#f1f5f9" />
+                        <XAxis
+                          dataKey="label"
+                          tickLine={false} axisLine={false}
+                          tick={{ fontSize: 9, fill: "#94a3b8" }}
+                          interval={Math.max(0, Math.floor(chartData.length / 6) - 1)}
+                        />
+                        <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 9, fill: "#94a3b8" }} allowDecimals={false} width={24} />
+                        <Tooltip
+                          contentStyle={{ fontSize: 11, borderRadius: 8, border: "1px solid #e2e8f0" }}
+                          labelFormatter={(v) => String(v)}
+                          formatter={(v, name) => {
+                            const line = LINES.find((l) => l.key === name);
+                            return [v ?? 0, line?.label ?? String(name)];
+                          }}
+                        />
+                        <Legend
+                          iconType="circle" iconSize={7}
+                          formatter={(value) => {
+                            const line = LINES.find((l) => l.key === value);
+                            return <span style={{ fontSize: 10, color: "#64748b" }}>{line?.label ?? value}</span>;
+                          }}
+                        />
+                        {LINES.map(({ key, color }) => (
+                          <Line
+                            key={key}
+                            dataKey={key}
+                            stroke={color}
+                            strokeWidth={2}
+                            dot={<Dot r={2.5} fill={color} stroke="#fff" strokeWidth={1} />}
+                            activeDot={{ r: 4 }}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              </Panel>
+            );
+          })()}
 
           {/* Calls feed */}
           <Panel

@@ -79,7 +79,7 @@ export async function GET(request: Request) {
               // Last 48h of API logs — client will filter to its local today and bucket by local hour
               db.apiLog.findMany({
                 where: { createdAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) } },
-                select: { createdAt: true },
+                select: { createdAt: true, status: true },
               }),
               // User map for joining into API logs
               db.user.findMany({ select: { id: true, email: true, name: true } }),
@@ -87,10 +87,20 @@ export async function GET(request: Request) {
 
           const userMap = new Map(allUsers.map((u) => [u.id, u]));
 
-          // Send raw ISO timestamps — client buckets by its own local timezone
+          // Categorise API logs for chart — client buckets by its own local timezone
+          const apiByCategory = { success: [] as string[], error: [] as string[], duplicate: [] as string[], cancelled: [] as string[], junk: [] as string[] };
+          for (const l of apiTodayRaw) {
+            const iso = l.createdAt.toISOString();
+            if (l.status === "success")                                                    apiByCategory.success.push(iso);
+            else if (l.status === "error" || l.status === "auth_failed" || l.status === "invalid_params") apiByCategory.error.push(iso);
+            else if (l.status === "duplicate")                                             apiByCategory.duplicate.push(iso);
+            else if (l.status === "cancelled")                                             apiByCategory.cancelled.push(iso);
+            else                                                                           apiByCategory.junk.push(iso);
+          }
+
           const todayTimestamps = {
             calls: callsTodayRaw.map((c) => c.createdAt.toISOString()),
-            api:   apiTodayRaw.map((c) => c.createdAt.toISOString()),
+            api:   apiByCategory,
           };
 
           send({
