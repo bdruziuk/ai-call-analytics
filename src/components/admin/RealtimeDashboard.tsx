@@ -189,6 +189,9 @@ function Panel({ title, sub, right, children, className = "" }: {
   );
 }
 
+type CostResult = { totalUsd: number | null; periodLabel: string; error?: string };
+type Costs = { openai: CostResult; railway: CostResult };
+
 /* ── Main component ── */
 export function RealtimeDashboard({ lang }: { lang: string }) {
   const [calls, setCalls]                   = useState<CallEntry[]>([]);
@@ -203,6 +206,8 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
   const prevIds                       = useRef<Set<string>>(new Set());
   const [tick, setTick]               = useState(0);
   const [filterEmail, setFilterEmail] = useState<string | null>(null);
+  const [costs, setCosts]             = useState<Costs | null>(null);
+  const [costsLoading, setCostsLoading] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setTick((n) => n + 1), 1000);
@@ -240,6 +245,20 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
     }
     connect();
     return () => es?.close();
+  }, []);
+
+  useEffect(() => {
+    setCostsLoading(true);
+    fetch("/api/admin/costs")
+      .then((r) => r.json())
+      .then((d: Costs) => setCosts(d))
+      .catch(console.error)
+      .finally(() => setCostsLoading(false));
+    // Refresh costs every 5 minutes
+    const id = setInterval(() => {
+      fetch("/api/admin/costs").then((r) => r.json()).then((d: Costs) => setCosts(d)).catch(console.error);
+    }, 5 * 60 * 1000);
+    return () => clearInterval(id);
   }, []);
 
   const secAgo = lastUpdate ? Math.round((Date.now() - lastUpdate.getTime()) / 1000) : null;
@@ -386,6 +405,35 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
             ) : (
               <p className={`text-xl font-bold tabular-nums leading-tight ${accent || "text-slate-900"}`}>{total}</p>
             )}
+          </div>
+        ))}
+      </div>
+
+      {/* ── Costs strip ── */}
+      <div className="grid grid-cols-2 gap-2 px-3 pb-1 shrink-0">
+        {[
+          { label: "OpenAI", icon: "🤖", data: costs?.openai, loading: costsLoading },
+          { label: "Railway", icon: "🚂", data: costs?.railway, loading: costsLoading },
+        ].map(({ label, icon, data, loading }) => (
+          <div key={label} className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 shadow-sm flex items-center gap-3">
+            <span className="text-base leading-none">{icon}</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+                {label} · {data?.periodLabel || "цього місяця"}
+              </p>
+              {loading ? (
+                <p className="text-sm text-slate-300 animate-pulse">завантаження…</p>
+              ) : data?.error ? (
+                <p className="text-xs text-red-400 truncate" title={data.error}>{data.error}</p>
+              ) : data?.totalUsd !== null && data?.totalUsd !== undefined ? (
+                <p className="text-xl font-bold text-slate-900 tabular-nums">
+                  ${data.totalUsd.toFixed(2)}
+                  <span className="ml-1 text-xs font-normal text-slate-400">USD</span>
+                </p>
+              ) : (
+                <p className="text-sm text-slate-300">—</p>
+              )}
+            </div>
           </div>
         ))}
       </div>
