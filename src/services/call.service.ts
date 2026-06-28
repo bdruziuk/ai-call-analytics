@@ -7,6 +7,7 @@ import { detectCallLanguage } from "@/lib/analysis/detectLanguage";
 import { incrementMinutesUsed } from "@/lib/planLimits";
 import { processingLimiter } from "@/lib/concurrency";
 import type { AnalysisLanguage } from "@/lib/analysis/prompts";
+import { isValidBusinessType } from "@/lib/businessTypes";
 
 // Processing timeout: 15 minutes. Covers large files + slow OpenAI responses.
 const PROCESSING_TIMEOUT_MS = parseInt(
@@ -120,12 +121,20 @@ async function runProcessCall(callId: string): Promise<Awaited<ReturnType<typeof
       },
     });
 
+    // Fetch user's businessType for industry-specific prompt
+    const userRecord = call.userId
+      ? await db.user.findUnique({ where: { id: call.userId }, select: { businessType: true } })
+      : null;
+    const rawBt = userRecord?.businessType ?? "other";
+    const businessType = isValidBusinessType(rawBt) ? rawBt : "other";
+
     const analysis = await withRetry(() =>
       withTimeout(
         analyzeCall(
           rawTranscription.text,
           call.reportType as "high_level" | "medium" | "detailed",
           langResult.detected as AnalysisLanguage,
+          businessType,
         ),
         PROCESSING_TIMEOUT_MS,
         "analysis",
@@ -148,6 +157,7 @@ async function runProcessCall(callId: string): Promise<Awaited<ReturnType<typeof
         objections:      analysis.objections,
         managerMistakes: analysis.managerMistakes,
         detailedReport:  analysis.detailedReport,
+        industryData:    analysis.industryData ?? null,
       },
     });
 

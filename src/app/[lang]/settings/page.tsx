@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { SettingsClient } from "@/components/settings/SettingsClient";
 import { getOrCreateSubscription } from "@/lib/planLimits";
 import { getPlan } from "@/lib/plans";
+import { isValidBusinessType } from "@/lib/businessTypes";
 
 type Props = {
   params:       Promise<{ lang: string }>;
@@ -38,6 +39,7 @@ export default async function SettingsPage({ params, searchParams }: Props) {
       marketingDemoConsentAccepted:  true,
       marketingDemoConsentAcceptedAt: true,
       marketingDemoConsentVersion:   true,
+      businessType:                  true,
     },
   });
 
@@ -89,6 +91,7 @@ export default async function SettingsPage({ params, searchParams }: Props) {
       isTestAccount={!!dbUser.isTestAccount}
       binotelKey={dbUser.binotelKey ?? null}
       binotelSecret={dbUser.binotelSecret ?? null}
+      businessType={isValidBusinessType(dbUser.businessType) ? dbUser.businessType : "other"}
       consent={{
         analyticsAccepted:   !!dbUser.analyticsConsentAccepted,
         analyticsAcceptedAt: dbUser.analyticsConsentAcceptedAt?.toISOString() ?? null,

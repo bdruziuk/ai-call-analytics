@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { db } from "@/lib/db";
+import { isValidBusinessType } from "@/lib/businessTypes";
 
 export async function PATCH(request: Request) {
   const session = await getServerSession(authOptions);
@@ -16,7 +17,7 @@ export async function PATCH(request: Request) {
 
   const body = await request.json();
 
-  const data: { name?: string; image?: string | null; binotelKey?: string | null; binotelSecret?: string | null } = {};
+  const data: { name?: string; image?: string | null; binotelKey?: string | null; binotelSecret?: string | null; businessType?: string } = {};
 
   if (typeof body.name === "string") {
     const name = body.name.trim();
@@ -34,6 +35,12 @@ export async function PATCH(request: Request) {
 
   if ("binotelSecret" in body) {
     data.binotelSecret = typeof body.binotelSecret === "string" && body.binotelSecret.trim() ? body.binotelSecret.trim() : null;
+  }
+
+  if ("businessType" in body) {
+    const bt = body.businessType;
+    if (!isValidBusinessType(bt)) return NextResponse.json({ error: "Invalid businessType" }, { status: 400 });
+    data.businessType = bt;
   }
 
   if (Object.keys(data).length === 0) {

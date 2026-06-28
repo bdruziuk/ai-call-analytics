@@ -9,6 +9,8 @@ import type ukDict from "@/dictionaries/uk.json";
 import { ApiKeySection, type ApiKeyRecord } from "@/components/settings/ApiKeySection";
 import { PlanSection } from "@/components/settings/PlanSection";
 import { IntegrationSetupSection } from "@/components/settings/IntegrationSetupSection";
+import { BusinessTypeSection } from "@/components/settings/BusinessTypeSection";
+import type { BusinessType } from "@/lib/businessTypes";
 
 type Dictionary = typeof ukDict;
 
@@ -44,6 +46,7 @@ type Props = {
   consent?: ConsentInfo;
   binotelKey?: string | null;
   binotelSecret?: string | null;
+  businessType?: BusinessType;
 };
 
 const languages = [
@@ -52,7 +55,7 @@ const languages = [
   { code: "ru", label: "Русский", flag: "🇷🇺" },
 ];
 
-export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentStatus, isTestAccount = false, consent, binotelKey, binotelSecret }: Props) {
+export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentStatus, isTestAccount = false, consent, binotelKey, binotelSecret, businessType = "other" }: Props) {
   const router                      = useRouter();
   const [name, setName]             = useState(user.name ?? "");
   const [image, setImage]           = useState(user.image ?? "");
@@ -332,6 +335,9 @@ export function SettingsClient({ t, lang, user, apiKeys, subscription, paymentSt
 
       {/* ── Integration Setup card ─────────────────────────────────────── */}
       <IntegrationSetupSection apiKeys={apiKeys} binotelKey={binotelKey ?? null} binotelSecret={binotelSecret ?? null} t={t} />
+
+      {/* ── Business Type card ─────────────────────────────────────────── */}
+      <BusinessTypeSection t={t} initialBusinessType={businessType} />
 
       {/* ── Consent card ──────────────────────────────────────────────── */}
       {consent && (

@@ -28,6 +28,8 @@ model User {
   binotelKey    String?
   binotelSecret String?
 
+  businessType  String  @default("other")  // pizzeria|restaurant|online_store|logistics|auto_service|medical_clinic|dental_clinic|beauty_salon|real_estate|b2b_sales|other
+
   calls         Call[]
   salesProfiles SalesProfile[]
   apiKeys       ApiKey[]
@@ -149,6 +151,7 @@ model Call {
   objections      Json?
   managerMistakes Json?
   detailedReport  Json?
+  industryData    Json?  // industry-specific KPIs and insights based on user's businessType
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

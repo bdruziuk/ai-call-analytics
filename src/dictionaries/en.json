@@ -345,6 +345,16 @@
       "binotelCredsSavedMsg": "Credentials saved — recordings will now download automatically.",
       "binotelCredsError": "Failed to save. Please try again.",
       "officialDocs": "Official docs"
+    },
+    "businessType": {
+      "sectionTitle": "Business Type",
+      "sectionDesc": "Select your business type so AI Call Analytics can provide more accurate call analysis, KPIs and recommendations.",
+      "label": "Business Type",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved ✓",
+      "error": "Error",
+      "hint": "Upcoming calls will be analyzed with your business specifics in mind."
     }
   },
   "apiDocs": {

@@ -61,6 +61,19 @@ export default async function CallDetailsPage({ params }: Props) {
       ? call.detailedReport
       : null;
 
+  type IndustryData = {
+    insights?: string[];
+    warnings?: string[];
+    missedOpportunities?: string[];
+    kpis?: Record<string, string | boolean | number>;
+  };
+  const industryData: IndustryData | null =
+    call.industryData &&
+    typeof call.industryData === "object" &&
+    !Array.isArray(call.industryData)
+      ? call.industryData as IndustryData
+      : null;
+
   function getStatusLabel(status: string): string {
     const map = t.dashboard.processingStatus;
     switch (status) {
@@ -325,6 +338,95 @@ export default async function CallDetailsPage({ params }: Props) {
                 <p className="text-sm leading-6 text-slate-600">{String(value || "-")}</p>
               </div>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* Industry-specific insights */}
+      {industryData && (
+        <section className="mb-6 rounded-2xl border border-brand-100 bg-brand-50/40 p-6 shadow-sm">
+          <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900">
+            <span className="h-1 w-4 rounded-full bg-brand-500 inline-block" />
+            {"industryInsights" in t.callDetail.sections
+              ? String((t.callDetail.sections as Record<string, string>)["industryInsights"])
+              : "Галузевий аналіз"}
+          </h2>
+
+          <div className="space-y-5">
+            {/* KPIs grid */}
+            {industryData.kpis && Object.keys(industryData.kpis).length > 0 && (
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">KPI</h3>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {Object.entries(industryData.kpis).map(([key, val]) => {
+                    const isBool  = typeof val === "boolean";
+                    const isTrue  = val === true || val === "true";
+                    const isFalse = val === false || val === "false";
+                    return (
+                      <div key={key} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${
+                        isBool
+                          ? isTrue
+                            ? "border-emerald-200 bg-emerald-50"
+                            : "border-red-200 bg-red-50"
+                          : "border-slate-200 bg-white"
+                      }`}>
+                        {isBool && (
+                          <span className={`text-base ${isTrue ? "text-emerald-500" : "text-red-400"}`}>
+                            {isTrue ? "✓" : "✗"}
+                          </span>
+                        )}
+                        <span className="font-medium text-slate-700 capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</span>
+                        {!isBool && (
+                          <span className="ml-auto text-slate-500">{String(val)}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Warnings */}
+            {(industryData.warnings?.length ?? 0) > 0 && (
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-600">Попередження</h3>
+                <ul className="space-y-1.5">
+                  {industryData.warnings!.map((w, i) => (
+                    <li key={i} className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
+                      ⚠ {w}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Missed opportunities */}
+            {(industryData.missedOpportunities?.length ?? 0) > 0 && (
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-red-500">Пропущені можливості</h3>
+                <ul className="space-y-1.5">
+                  {industryData.missedOpportunities!.map((m, i) => (
+                    <li key={i} className="rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-800">
+                      ✗ {m}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Insights */}
+            {(industryData.insights?.length ?? 0) > 0 && (
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-600">Спостереження</h3>
+                <ul className="space-y-1.5">
+                  {industryData.insights!.map((ins, i) => (
+                    <li key={i} className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-2.5 text-sm text-brand-800">
+                      {ins}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </section>
       )}
