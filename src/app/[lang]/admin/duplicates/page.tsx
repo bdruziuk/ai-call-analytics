@@ -117,13 +117,22 @@ function DupTable({ groups, label }: { groups: DupGroup[]; label: string }) {
   );
 }
 
+const SINCE_OPTIONS = [
+  { label: "Всі", value: "" },
+  { label: "Після 27.06 14:00 (деплой фіксу)", value: "2026-06-27T14:00:00.000Z" },
+  { label: "Після 28.06 00:00 (сьогодні)", value: "2026-06-28T00:00:00.000Z" },
+  { label: "Після 28.06 06:00", value: "2026-06-28T06:00:00.000Z" },
+];
+
 export default function DuplicatesPage() {
   const [data, setData] = useState<Data | null>(null);
   const [loading, setLoading] = useState(true);
+  const [since, setSince] = useState("");
 
-  async function load() {
+  async function load(sinceVal = since) {
     setLoading(true);
-    const res = await fetch("/api/admin/duplicates");
+    const url = sinceVal ? `/api/admin/duplicates?since=${encodeURIComponent(sinceVal)}` : "/api/admin/duplicates";
+    const res = await fetch(url);
     if (res.ok) setData(await res.json());
     setLoading(false);
   }
@@ -139,13 +148,30 @@ export default function DuplicatesPage() {
             <p className="mt-0.5 text-sm text-slate-500">Аналіз всіх дзвінків у базі</p>
           </div>
           <button
-            onClick={load}
+            onClick={() => load(since)}
             disabled={loading}
             className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-50"
           >
             <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
             Оновити
           </button>
+        </div>
+
+        {/* Since filter */}
+        <div className="flex flex-wrap gap-2">
+          {SINCE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => { setSince(opt.value); load(opt.value); }}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                since === opt.value
+                  ? "bg-brand-600 text-white"
+                  : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
 
         {loading && !data && (

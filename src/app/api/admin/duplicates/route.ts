@@ -11,7 +11,9 @@ function isAdminEmail(email: string | null | undefined): boolean {
     .includes(email.toLowerCase());
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const since = searchParams.get("since"); // ISO date string — only show groups with calls after this
   const session = await getServerSession(authOptions);
   if (!isAdminEmail(session?.user?.email)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -62,9 +64,13 @@ export async function GET() {
     bySignature.get(key)!.push(c);
   }
 
-  const dupsByExternalId = [...byExternalId.values()].filter((g) => g.length > 1);
-  const dupsByFileName   = [...byFileName.values()].filter((g) => g.length > 1);
-  const dupsBySignature  = [...bySignature.values()].filter((g) => g.length > 1);
+  const sinceDate = since ? new Date(since) : null;
+  const afterSince = (g: typeof calls) =>
+    !sinceDate || g.some((c) => c.createdAt >= sinceDate);
+
+  const dupsByExternalId = [...byExternalId.values()].filter((g) => g.length > 1 && afterSince(g));
+  const dupsByFileName   = [...byFileName.values()].filter((g) => g.length > 1 && afterSince(g));
+  const dupsBySignature  = [...bySignature.values()].filter((g) => g.length > 1 && afterSince(g));
 
   // Calls that have NO externalId at all
   const noExternalId = calls.filter((c) => !c.externalId);
