@@ -6,6 +6,7 @@ import { analyzeCall } from "@/lib/analyzeCall";
 import { detectCallLanguage } from "@/lib/analysis/detectLanguage";
 import { incrementMinutesUsed } from "@/lib/planLimits";
 import { processingLimiter } from "@/lib/concurrency";
+import { Prisma } from "@prisma/client";
 import type { AnalysisLanguage } from "@/lib/analysis/prompts";
 import { isValidBusinessType } from "@/lib/businessTypes";
 
@@ -157,7 +158,7 @@ async function runProcessCall(callId: string): Promise<Awaited<ReturnType<typeof
         objections:      analysis.objections,
         managerMistakes: analysis.managerMistakes,
         detailedReport:  analysis.detailedReport,
-        industryData:    analysis.industryData ?? null,
+        industryData:    analysis.industryData ?? Prisma.JsonNull,
       },
     });
 
