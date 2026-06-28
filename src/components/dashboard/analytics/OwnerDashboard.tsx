@@ -57,12 +57,6 @@ export function OwnerDashboard({ data, lang }: Props) {
   return (
     <div className="space-y-6">
 
-      {/* ── Mock data notice ── */}
-      <div className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800">
-        <AlertTriangle size={14} className="shrink-0" />
-        Дашборд працює на демо-даних. Замініть <code className="mx-1 rounded bg-amber-100 px-1">MOCK_OWNER</code> у <code className="rounded bg-amber-100 px-1">src/lib/mock-dashboard-analytics.ts</code> на реальні дані з Prisma.
-      </div>
-
       {/* ── KPI cards ── */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <DashboardKpiCard
