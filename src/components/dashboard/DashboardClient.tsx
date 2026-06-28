@@ -148,6 +148,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
   const [analyticsData, setAnalyticsData] = useState<{ ownerAnalytics: OwnerAnalytics; marketerAnalytics: MarketerAnalytics }>({ ownerAnalytics, marketerAnalytics });
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [calls, setCalls]           = useState<CallItem[]>([]);
+  const [totalCalls, setTotalCalls] = useState<number>(0);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [files, setFiles]           = useState<File[]>([]);
@@ -249,10 +250,11 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
     const qs = new URLSearchParams({ limit: "30", ...(p !== "all" ? { period: p } : {}), ...(viewAs ? { viewAs } : {}) });
     const res = await fetch(`/api/calls?${qs}`, { cache: "no-store" });
     if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
-    const { calls: fresh, nextCursor: nc }: { calls: CallItem[]; nextCursor: string | null } =
+    const { calls: fresh, nextCursor: nc, total }: { calls: CallItem[]; nextCursor: string | null; total: number | null } =
       await res.json();
     setCalls(fresh);
     setNextCursor(nc);
+    if (total != null) setTotalCalls(total);
   }
 
   // Loads the first page and merges into state (preserving older calls already scrolled in).
@@ -260,7 +262,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
     const qs = new URLSearchParams({ limit: "30", ...(period !== "all" ? { period } : {}), ...(viewAs ? { viewAs } : {}) });
     const res = await fetch(`/api/calls?${qs}`, { cache: "no-store" });
     if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
-    const { calls: fresh, nextCursor: nc }: { calls: CallItem[]; nextCursor: string | null } =
+    const { calls: fresh, nextCursor: nc, total }: { calls: CallItem[]; nextCursor: string | null; total: number | null } =
       await res.json();
     setCalls((prev) => {
       const freshIds = new Set(fresh.map((c) => c.id));
@@ -268,6 +270,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
       return [...fresh, ...extra];
     });
     setNextCursor(nc);
+    if (total != null) setTotalCalls(total);
   }
 
   const loadMore = useCallback(async () => {
@@ -572,7 +575,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
       {/* Stats */}
       <div className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         {[
-          { label: t.dashboard.stats.totalCalls, value: calls.length, unit: "" },
+          { label: t.dashboard.stats.totalCalls, value: totalCalls, unit: "" },
           { label: t.dashboard.stats.averageScore, value: averageScore, unit: "/10" },
           { label: t.dashboard.stats.conversionRate, value: saleRate, unit: "%" },
           { label: t.dashboard.stats.errors, value: failedCalls, unit: "" },

@@ -35,28 +35,36 @@ export async function GET(request: Request) {
   }
   const since = periodSince(period);
 
+  const periodFilter = since ? { gte: since } : undefined;
+
   const createdAtFilter = {
-    ...(since  ? { gte: since }              : {}),
-    ...(cursor ? { lt: new Date(cursor) }    : {}),
+    ...(since  ? { gte: since }           : {}),
+    ...(cursor ? { lt: new Date(cursor) } : {}),
   };
 
-  const calls = await db.call.findMany({
-    where: {
-      userId,
-      ...(Object.keys(createdAtFilter).length ? { createdAt: createdAtFilter } : {}),
-    },
-    orderBy: { createdAt: 'desc' },
-    take: limit + 1,   // fetch one extra to detect whether there is a next page
-  });
+  const whereBase = { userId, ...(periodFilter ? { createdAt: periodFilter } : {}) };
 
-  const hasMore    = calls.length > limit;
+  const [calls, total] = await Promise.all([
+    db.call.findMany({
+      where: {
+        userId,
+        ...(Object.keys(createdAtFilter).length ? { createdAt: createdAtFilter } : {}),
+      },
+      orderBy: { createdAt: 'desc' },
+      take: limit + 1,
+    }),
+    // Only count on first page (no cursor) to avoid extra query on pagination
+    cursor ? Promise.resolve(null) : db.call.count({ where: whereBase }),
+  ]);
+
+  const hasMore = calls.length > limit;
   if (hasMore) calls.pop();
 
   const nextCursor = hasMore
     ? calls[calls.length - 1].createdAt.toISOString()
     : null;
 
-  return NextResponse.json({ calls, nextCursor }, {
+  return NextResponse.json({ calls, nextCursor, total }, {
     headers: { 'Cache-Control': 'no-store' },
   });
 }
