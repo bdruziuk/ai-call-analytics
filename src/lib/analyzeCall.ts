@@ -10,7 +10,7 @@ const AnalysisSchema = z.object({
   saleStatus:     z.enum(['sold', 'not_sold', 'potential_sale', 'junk']),
   customerIntent: z.string(),
   nextStep:       z.string(),
-  score:          z.number().min(1).max(10),
+  score:          z.number().min(1).max(10).nullable(),
 
   issues:          z.array(z.string()).default([]),
   positives:       z.array(z.string()).default([]),
@@ -70,6 +70,11 @@ export async function analyzeCall(
 
   if (parsed.saleStatus) {
     parsed.saleStatus = normalizeSaleStatus(parsed.saleStatus);
+  }
+
+  // Junk calls have no meaningful quality score — null it out so it's excluded from averages
+  if (parsed.saleStatus === "junk") {
+    parsed.score = null;
   }
 
   return AnalysisSchema.parse(parsed);

@@ -42,3 +42,22 @@ describe("normalizeSaleStatus", () => {
     expect(normalizeSaleStatus("junk sold")).toBe("junk");
   });
 });
+
+describe("junk score nulling (contract)", () => {
+  // The analyzeCall function sets score=null when saleStatus==='junk'.
+  // We can't call analyzeCall directly (requires OpenAI), but we verify the
+  // normalizeSaleStatus side — that "junk" is correctly identified before nulling.
+  it("normalizeSaleStatus returns 'junk' for all junk variants", () => {
+    const junkInputs = ["junk", "JUNK", "it's a junk call", "junk_call", "junk lead"];
+    for (const input of junkInputs) {
+      expect(normalizeSaleStatus(input)).toBe("junk");
+    }
+  });
+
+  it("non-junk statuses are never mapped to junk", () => {
+    const nonJunk = ["sold", "not_sold", "potential_sale", "unknown", ""];
+    for (const input of nonJunk) {
+      expect(normalizeSaleStatus(input)).not.toBe("junk");
+    }
+  });
+});
