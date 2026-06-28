@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { openai } from './openai';
 import { getAnalysisPrompt, ReportType, AnalysisLanguage } from '@/lib/analysis/prompts';
 import type { BusinessType } from '@/lib/businessTypes';
+import { normalizeSaleStatus } from '@/lib/analysis/saleStatus';
 
 const AnalysisSchema = z.object({
   summary:        z.string(),
@@ -39,6 +40,8 @@ const AnalysisSchema = z.object({
 
 export type CallAnalysis = z.infer<typeof AnalysisSchema>;
 
+export { normalizeSaleStatus } from '@/lib/analysis/saleStatus';
+
 export async function analyzeCall(
   transcript:   string,
   reportType:   ReportType = 'medium',
@@ -65,18 +68,8 @@ export async function analyzeCall(
 
   const parsed = JSON.parse(content);
 
-  // Normalize saleStatus — AI sometimes returns verbose strings
   if (parsed.saleStatus) {
-    const normalized = String(parsed.saleStatus).toLowerCase().trim();
-    if (normalized === 'junk' || normalized.includes('junk')) {
-      parsed.saleStatus = 'junk';
-    } else if (normalized.includes('sold') && !normalized.includes('not')) {
-      parsed.saleStatus = 'sold';
-    } else if (normalized.includes('potential')) {
-      parsed.saleStatus = 'potential_sale';
-    } else {
-      parsed.saleStatus = 'not_sold';
-    }
+    parsed.saleStatus = normalizeSaleStatus(parsed.saleStatus);
   }
 
   return AnalysisSchema.parse(parsed);
