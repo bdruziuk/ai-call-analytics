@@ -139,13 +139,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await downloadAndQueueRecording({ recordingUrl: s3Url, reportType, userId: auth.userId, prefix: "binotel", internalNumber, salesProfileId });
+    const result = await downloadAndQueueRecording({ recordingUrl: s3Url, reportType, userId: auth.userId, prefix: "binotel", internalNumber, salesProfileId, externalId: generalCallID });
 
-    // Update the processing record with the real call data
-    if (existing) {
-      if ("id" in result) {
-        await db.call.delete({ where: { id: existing.id } });
-      }
+    // Remove the temporary processing placeholder now that the real call record exists
+    if (existing && "id" in result) {
+      await db.call.delete({ where: { id: existing.id } });
     }
 
     logApiRequest(auth.userId, "binotel", "success", 200);
