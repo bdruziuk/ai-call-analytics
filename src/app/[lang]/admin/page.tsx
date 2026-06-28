@@ -44,10 +44,9 @@ export default async function AdminPage({ params }: Props) {
     db.user.findMany({
       include: {
         salesProfiles: {
-          include: { calls: { orderBy: { createdAt: "desc" } } },
+          select: { id: true, name: true, description: true, photo: true, createdAt: true, updatedAt: true },
           orderBy: { createdAt: "asc" },
         },
-        calls:        { orderBy: { createdAt: "desc" } },
         subscription: { select: { planId: true, minutesUsed: true } },
         apiKeys:      { select: { id: true, name: true, keyPrefix: true, lastUsedAt: true, createdAt: true }, orderBy: { createdAt: "desc" } },
         _count:       { select: { calls: true, salesProfiles: true } },
@@ -85,20 +84,12 @@ export default async function AdminPage({ params }: Props) {
     minutesUsed: u.subscription?.minutesUsed ?? 0,
     createdAt: u.createdAt.toISOString(),
     updatedAt: u.updatedAt.toISOString(),
-    calls: u.calls.map((c: typeof u.calls[number]) => ({
-      ...c,
-      createdAt: c.createdAt.toISOString(),
-      updatedAt: c.updatedAt.toISOString(),
-    })),
+    calls: [],
     salesProfiles: u.salesProfiles.map((p: typeof u.salesProfiles[number]) => ({
       ...p,
       createdAt: p.createdAt.toISOString(),
       updatedAt: p.updatedAt.toISOString(),
-      calls: p.calls.map((c: typeof p.calls[number]) => ({
-        ...c,
-        createdAt: c.createdAt.toISOString(),
-        updatedAt: c.updatedAt.toISOString(),
-      })),
+      calls: [],
     })),
     apiKeys: u.apiKeys.map((k) => ({
       ...k,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Fragment } from "react";
+import { useState, useEffect, useCallback, useRef, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -540,26 +540,13 @@ function ApiSection({ apiKeys, apiLogs, locale, binotelKey, binotelSecret, userI
 /* ── Single user row ──────────────────────────────────────────────────────── */
 
 type PeriodKey = "all" | "month" | "week" | "3days" | "today";
-const PERIOD_OPTIONS: { key: PeriodKey; labelKey: string; ms: number | null }[] = [
-  { key: "all",   labelKey: "periodAll",   ms: null },
-  { key: "month", labelKey: "periodMonth", ms: 30 * 86400_000 },
-  { key: "week",  labelKey: "periodWeek",  ms: 7  * 86400_000 },
-  { key: "3days", labelKey: "period3days", ms: 3  * 86400_000 },
-  { key: "today", labelKey: "periodToday", ms: 0 },
+const PERIOD_OPTIONS: { key: PeriodKey; labelKey: string }[] = [
+  { key: "all",   labelKey: "periodAll"   },
+  { key: "month", labelKey: "periodMonth" },
+  { key: "week",  labelKey: "periodWeek"  },
+  { key: "3days", labelKey: "period3days" },
+  { key: "today", labelKey: "periodToday" },
 ];
-
-function filterByPeriod(calls: CallRecord[], period: PeriodKey): CallRecord[] {
-  if (period === "all") return calls;
-  const now = Date.now();
-  if (period === "today") {
-    const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
-    return calls.filter((c) => new Date(c.createdAt) >= midnight);
-  }
-  const opt = PERIOD_OPTIONS.find((p) => p.key === period);
-  if (!opt?.ms) return calls;
-  const cutoff = now - opt.ms;
-  return calls.filter((c) => new Date(c.createdAt).getTime() >= cutoff);
-}
 
 function UserRow({
   user, t, locale, lang, onDelete, onCallRemoved,
@@ -577,17 +564,33 @@ function UserRow({
   const [profiles, setProfiles]               = useState(user.salesProfiles);
   const [deletingProfile, setDeletingProfile] = useState<string | null>(null);
   const [period, setPeriod]             = useState<PeriodKey>("all");
-  // Local mirror of user.calls — updated when calls are deleted so
-  // all derived counts (total, in-progress, failed, unassigned) stay accurate.
-  const [localCalls, setLocalCalls] = useState(user.calls);
+  const [localCalls, setLocalCalls]     = useState<CallRecord[]>([]);
+  const [callsLoading, setCallsLoading] = useState(false);
+  const loadedPeriod                    = useRef<string | null>(null);
   const plan = PLAN_META[planId] ?? PLAN_META.free;
 
   function removeCall(callId: string) {
     setLocalCalls((prev) => prev.filter((c) => c.id !== callId));
+    setProfiles((prev) => prev.map((p) => ({ ...p, calls: p.calls.filter((c) => c.id !== callId) })));
     onCallRemoved(callId);
   }
 
-  const filteredCalls = filterByPeriod(localCalls, period);
+  useEffect(() => {
+    if (!open) return;
+    if (loadedPeriod.current === period) return;
+    loadedPeriod.current = period;
+    setCallsLoading(true);
+    fetch(`/api/admin/user/${user.id}/calls?period=${period}`)
+      .then((r) => r.json())
+      .then(({ calls, profiles: p }: { calls: CallRecord[]; profiles: ProfileRecord[] }) => {
+        setLocalCalls(calls);
+        setProfiles(p);
+      })
+      .catch(console.error)
+      .finally(() => setCallsLoading(false));
+  }, [open, period, user.id]);
+
+  const filteredCalls = localCalls;
   const inProgress    = filteredCalls.filter((c) => IN_PROGRESS.includes(c.status)).length;
   const failed        = filteredCalls.filter((c) => c.status === "failed").length;
   const assignedIds   = new Set(profiles.map((p) => p.id));
@@ -723,8 +726,7 @@ function UserRow({
             </span>
             <span className="inline-flex items-center gap-1 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
               <PhoneCall size={11} />
-              {filteredCalls.length}
-              {period !== "all" && <span className="text-slate-400">/ {localCalls.length}</span>}
+              {open ? filteredCalls.length : user._count.calls}
             </span>
             {inProgress > 0 && (
               <span className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 border border-amber-200">
@@ -847,8 +849,16 @@ function UserRow({
             )}
           </div>
 
+          {/* Calls loading state */}
+          {callsLoading && (
+            <div className="flex items-center gap-2 px-5 py-4 text-xs text-slate-400">
+              <Loader2 size={13} className="animate-spin" />
+              Завантаження дзвінків…
+            </div>
+          )}
+
           {/* Profiles */}
-          {profiles.length > 0 ? (
+          {!callsLoading && profiles.length > 0 ? (
             profiles.map((profile) => (
               <div key={profile.id} className="border-b border-slate-100 last:border-0">
                 <div className="flex items-center gap-2 bg-slate-50 px-5 py-2.5">
@@ -881,28 +891,19 @@ function UserRow({
                   </button>
                 </div>
                 <CallsTable
-                  calls={filterByPeriod(profile.calls, period)}
+                  calls={profile.calls}
                   t={t}
                   locale={locale}
-                  onCallDeleted={(callId) => {
-                    removeCall(callId);
-                    setProfiles((prev) =>
-                      prev.map((p) =>
-                        p.id === profile.id
-                          ? { ...p, calls: p.calls.filter((c) => c.id !== callId) }
-                          : p
-                      )
-                    );
-                  }}
+                  onCallDeleted={(callId) => removeCall(callId)}
                 />
               </div>
             ))
-          ) : (
+          ) : !callsLoading ? (
             <p className="px-5 py-3 text-xs text-slate-400">{t.admin.noManagers}</p>
-          )}
+          ) : null}
 
           {/* Unassigned calls */}
-          {unassigned.length > 0 && (
+          {!callsLoading && unassigned.length > 0 && (
             <div className="border-t border-slate-100">
               <div className="flex items-center gap-2 bg-slate-50 px-5 py-2.5">
                 <PhoneCall size={12} className="text-slate-400" />
