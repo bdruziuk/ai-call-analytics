@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { db } from "@/lib/db";
 import { PLAN_ORDER } from "@/lib/plans";
+import { isValidBusinessType } from "@/lib/businessTypes";
 
 function isAdminEmail(email: string | null | undefined): boolean {
   if (!email) return false;
@@ -61,6 +62,21 @@ export async function PATCH(
       return NextResponse.json({ id, planId: body.planId });
     } catch (err) {
       console.error("[admin/user/PATCH planId]", err);
+      return NextResponse.json({ error: "DB_ERROR", detail: String(err) }, { status: 500 });
+    }
+  }
+
+  // ── businessType ────────────────────────────────────────────────────────
+  if (typeof body.businessType === "string") {
+    if (!isValidBusinessType(body.businessType)) {
+      return NextResponse.json({ error: "Invalid businessType" }, { status: 400 });
+    }
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await db.user.update({ where: { id }, data: { businessType: body.businessType } as any });
+      return NextResponse.json({ id, businessType: body.businessType });
+    } catch (err) {
+      console.error("[admin/user/PATCH businessType]", err);
       return NextResponse.json({ error: "DB_ERROR", detail: String(err) }, { status: 500 });
     }
   }

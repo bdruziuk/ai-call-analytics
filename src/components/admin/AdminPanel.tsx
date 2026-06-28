@@ -6,8 +6,9 @@ import Link from "next/link";
 import {
   ChevronDown, ChevronRight, RefreshCw, Shield,
   Users, PhoneCall, CheckCircle2, XCircle, Loader2,
-  Clock, User, Search, Wifi, Trash2, UserPlus, X, Key, Activity, Radio,
+  Clock, User, Search, Wifi, Trash2, UserPlus, X, Key, Activity, Radio, Briefcase,
 } from "lucide-react";
+import { BUSINESS_TYPES, BUSINESS_TYPE_LABELS, isValidBusinessType, type BusinessType } from "@/lib/businessTypes";
 import type ukDict from "@/dictionaries/uk.json";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { PromoCodesSection, type PromoCodeRecord } from "@/components/admin/PromoCodesSection";
@@ -68,6 +69,7 @@ type UserRecord = {
   createdAt: string;
   binotelKey: string | null;
   binotelSecret: string | null;
+  businessType: string;
   calls: CallRecord[];
   salesProfiles: ProfileRecord[];
   apiKeys: ApiKeyRecord[];
@@ -555,11 +557,15 @@ function UserRow({
   onDelete: (id: string) => void;
   onCallRemoved: (callId: string) => void;
 }) {
-  const [open, setOpen]                 = useState(false);
-  const [isTest, setIsTest]             = useState(!!user.isTestAccount);
-  const [planId, setPlanId]             = useState(user.planId);
-  const [saving, setSaving]             = useState(false);
-  const [savingPlan, setSavingPlan]     = useState(false);
+  const [open, setOpen]                     = useState(false);
+  const [isTest, setIsTest]                 = useState(!!user.isTestAccount);
+  const [planId, setPlanId]                 = useState(user.planId);
+  const [businessType, setBusinessType]     = useState<BusinessType>(
+    isValidBusinessType(user.businessType) ? user.businessType : "other"
+  );
+  const [saving, setSaving]                 = useState(false);
+  const [savingPlan, setSavingPlan]         = useState(false);
+  const [savingBizType, setSavingBizType]   = useState(false);
   const [deleting, setDeleting]         = useState(false);
   const [profiles, setProfiles]               = useState(user.salesProfiles);
   const [deletingProfile, setDeletingProfile] = useState<string | null>(null);
@@ -612,6 +618,26 @@ function UserRow({
       setIsTest(!next);    // rollback
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleBusinessTypeChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const next = e.target.value as BusinessType;
+    if (!isValidBusinessType(next)) return;
+    const prev = businessType;
+    setBusinessType(next);
+    setSavingBizType(true);
+    try {
+      const res = await fetch(`/api/admin/user/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessType: next }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setBusinessType(prev);
+    } finally {
+      setSavingBizType(false);
     }
   }
 
@@ -766,6 +792,26 @@ function UserRow({
           {savingPlan
             ? <Loader2 size={10} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 animate-spin" style={{ color: plan.text }} />
             : <ChevronDown size={10} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2" style={{ color: plan.text }} />
+          }
+        </div>
+
+        {/* ── Business type selector ── */}
+        <div className="relative flex-shrink-0">
+          <Briefcase size={10} className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
+          <select
+            value={businessType}
+            onChange={handleBusinessTypeChange}
+            disabled={savingBizType}
+            title="Тип бізнесу"
+            className="appearance-none rounded-lg border border-slate-200 bg-white pl-6 pr-6 py-1.5 text-xs font-medium text-slate-600 cursor-pointer transition-colors disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[#1C78AE]/30 max-w-[140px] truncate"
+          >
+            {BUSINESS_TYPES.map((bt) => (
+              <option key={bt} value={bt}>{BUSINESS_TYPE_LABELS[bt]}</option>
+            ))}
+          </select>
+          {savingBizType
+            ? <Loader2 size={10} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 animate-spin text-slate-400" />
+            : <ChevronDown size={10} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
           }
         </div>
 
@@ -1040,6 +1086,7 @@ function CreateAccountModal({
         createdAt:     data.createdAt,
         binotelKey:    null,
         binotelSecret: null,
+        businessType:  "other",
         calls:         [],
         salesProfiles: [],
         apiKeys:       [],
