@@ -135,6 +135,13 @@
       "today": "Today"
     },
     "updating": "Updating…",
+    "chart": {
+      "titleToday": "Calls by hour",
+      "titlePeriod": "Calls by day",
+      "legendTotal": "Total",
+      "legendCompleted": "Completed",
+      "legendFailed": "Failed"
+    },
     "trendVs": "vs. last week",
     "owner": {
       "kpi": {

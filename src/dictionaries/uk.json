@@ -135,6 +135,13 @@
       "today": "Сьогодні"
     },
     "updating": "Оновлення…",
+    "chart": {
+      "titleToday": "Дзвінки по годинах",
+      "titlePeriod": "Дзвінки по днях",
+      "legendTotal": "Всього",
+      "legendCompleted": "Готово",
+      "legendFailed": "Помилка"
+    },
     "trendVs": "vs. минулий тиждень",
     "owner": {
       "kpi": {

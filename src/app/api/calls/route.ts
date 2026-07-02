@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 
   const whereBase = { userId, ...(periodFilter ? { createdAt: periodFilter } : {}) };
 
-  const [calls, total, periodStats] = await Promise.all([
+  const [calls, total, periodStats, chartRaw] = await Promise.all([
     db.call.findMany({
       where: {
         userId,
@@ -59,6 +59,12 @@ export async function GET(request: Request) {
     cursor ? Promise.resolve(null) : db.call.findMany({
       where: { ...whereBase, status: { in: ['completed', 'failed'] } },
       select: { status: true, score: true, saleStatus: true },
+    }),
+    // Chart data — lightweight fetch of all dates in period
+    cursor ? Promise.resolve(null) : db.call.findMany({
+      where: whereBase,
+      select: { createdAt: true, status: true },
+      orderBy: { createdAt: 'asc' },
     }),
   ]);
 
@@ -82,7 +88,27 @@ export async function GET(request: Request) {
     stats = { averageScore: avgScore, saleRate, failedCalls: failed };
   }
 
-  return NextResponse.json({ calls, nextCursor, total, stats }, {
+  // Build chart buckets (hourly for today, daily otherwise)
+  type ChartBucket = { label: string; total: number; completed: number; failed: number };
+  let chartData: ChartBucket[] | null = null;
+  if (chartRaw) {
+    const byKey = new Map<string, ChartBucket>();
+    const isToday = period === 'today';
+    for (const c of chartRaw) {
+      const d = new Date(c.createdAt);
+      const label = isToday
+        ? `${String(d.getHours()).padStart(2, '0')}:00`
+        : `${d.getDate().toString().padStart(2, '0')}.${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+      const bucket = byKey.get(label) ?? { label, total: 0, completed: 0, failed: 0 };
+      bucket.total++;
+      if (c.status === 'completed') bucket.completed++;
+      if (c.status === 'failed')    bucket.failed++;
+      byKey.set(label, bucket);
+    }
+    chartData = Array.from(byKey.values());
+  }
+
+  return NextResponse.json({ calls, nextCursor, total, stats, chartData }, {
     headers: { 'Cache-Control': 'no-store' },
   });
 }

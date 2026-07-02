@@ -135,6 +135,13 @@
       "today": "Сегодня"
     },
     "updating": "Обновление…",
+    "chart": {
+      "titleToday": "Звонки по часам",
+      "titlePeriod": "Звонки по дням",
+      "legendTotal": "Всего",
+      "legendCompleted": "Готово",
+      "legendFailed": "Ошибка"
+    },
     "trendVs": "vs. прошлая неделя",
     "owner": {
       "kpi": {

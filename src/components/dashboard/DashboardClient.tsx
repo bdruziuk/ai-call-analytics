@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Eye, Loader2, Trash2, X } from "lucide-react";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from "recharts";
 import { OwnerDashboard } from "@/components/dashboard/analytics/OwnerDashboard";
 import { MarketerDashboard } from "@/components/dashboard/analytics/MarketerDashboard";
 import type { OwnerAnalytics, MarketerAnalytics } from "@/lib/analytics-types";
@@ -144,6 +145,8 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
   const [averageScore, setAverageScore] = useState<number>(0);
   const [saleRate, setSaleRate]         = useState<number>(0);
   const [failedCalls, setFailedCalls]   = useState<number>(0);
+  type ChartBucket = { label: string; total: number; completed: number; failed: number };
+  const [chartData, setChartData] = useState<ChartBucket[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [files, setFiles]           = useState<File[]>([]);
@@ -247,24 +250,27 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
     nextCursor: string | null;
     total: number | null;
     stats: { averageScore: number; saleRate: number; failedCalls: number } | null;
+    chartData: ChartBucket[] | null;
   };
 
-  function applyStats(stats: CallsResponse["stats"]) {
-    if (!stats) return;
-    setAverageScore(stats.averageScore);
-    setSaleRate(stats.saleRate);
-    setFailedCalls(stats.failedCalls);
+  function applyStats(res: Pick<CallsResponse, "stats" | "chartData">) {
+    if (res.stats) {
+      setAverageScore(res.stats.averageScore);
+      setSaleRate(res.stats.saleRate);
+      setFailedCalls(res.stats.failedCalls);
+    }
+    if (res.chartData) setChartData(res.chartData);
   }
 
   async function loadCallsForPeriod(p: PeriodKey) {
     const qs = new URLSearchParams({ limit: "30", ...(p !== "all" ? { period: p } : {}), ...(viewAs ? { viewAs } : {}) });
     const res = await fetch(`/api/calls?${qs}`, { cache: "no-store" });
     if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
-    const { calls: fresh, nextCursor: nc, total, stats }: CallsResponse = await res.json();
-    setCalls(fresh);
-    setNextCursor(nc);
-    if (total != null) setTotalCalls(total);
-    applyStats(stats);
+    const data: CallsResponse = await res.json();
+    setCalls(data.calls);
+    setNextCursor(data.nextCursor);
+    if (data.total != null) setTotalCalls(data.total);
+    applyStats(data);
   }
 
   // Loads the first page and merges into state (preserving older calls already scrolled in).
@@ -273,15 +279,15 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
     const qs = new URLSearchParams({ limit: "30", ...(p !== "all" ? { period: p } : {}), ...(viewAs ? { viewAs } : {}) });
     const res = await fetch(`/api/calls?${qs}`, { cache: "no-store" });
     if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
-    const { calls: fresh, nextCursor: nc, total, stats }: CallsResponse = await res.json();
+    const data: CallsResponse = await res.json();
     setCalls((prev) => {
-      const freshIds = new Set(fresh.map((c) => c.id));
+      const freshIds = new Set(data.calls.map((c) => c.id));
       const extra    = prev.filter((c) => !freshIds.has(c.id));
-      return [...fresh, ...extra];
+      return [...data.calls, ...extra];
     });
-    setNextCursor(nc);
-    if (total != null) setTotalCalls(total);
-    applyStats(stats);
+    setNextCursor(data.nextCursor);
+    if (data.total != null) setTotalCalls(data.total);
+    applyStats(data);
   }
 
   const loadMore = useCallback(async () => {
@@ -594,6 +600,51 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
           </div>
         ))}
       </div>
+
+      {/* Calls chart */}
+      {chartData.length > 0 && (
+        <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-6">
+          <h2 className="mb-4 text-sm font-semibold text-slate-700">
+            {period === "today" ? t.dashboard.chart.titleToday : t.dashboard.chart.titlePeriod}
+          </h2>
+          <ResponsiveContainer width="100%" height={180}>
+            <AreaChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gradTotal" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#1C78AE" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#1C78AE" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="gradCompleted" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#94a3b8" }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#94a3b8" }} />
+              <Tooltip
+                contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }}
+                formatter={(val: number, name: string) => {
+                  const labels: Record<string, string> = {
+                    total:     t.dashboard.chart.legendTotal,
+                    completed: t.dashboard.chart.legendCompleted,
+                    failed:    t.dashboard.chart.legendFailed,
+                  };
+                  return [val, labels[name] ?? name];
+                }}
+              />
+              <Area type="monotone" dataKey="total"     stroke="#1C78AE" strokeWidth={2} fill="url(#gradTotal)"     dot={false} />
+              <Area type="monotone" dataKey="completed" stroke="#10b981" strokeWidth={1.5} fill="url(#gradCompleted)" dot={false} />
+              <Area type="monotone" dataKey="failed"    stroke="#ef4444" strokeWidth={1.5} fill="none"               dot={false} />
+            </AreaChart>
+          </ResponsiveContainer>
+          <div className="mt-3 flex items-center gap-5 text-xs text-slate-500">
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-brand-500" />{t.dashboard.chart.legendTotal}</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />{t.dashboard.chart.legendCompleted}</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-red-400" />{t.dashboard.chart.legendFailed}</span>
+          </div>
+        </section>
+      )}
 
       {/* Calls table */}
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
