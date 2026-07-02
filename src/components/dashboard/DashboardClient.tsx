@@ -162,6 +162,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"calls" | "owner" | "marketer">("calls");
+  const periodRef     = useRef<PeriodKey>("month");
   const fileInputRef  = useRef<HTMLInputElement>(null);
   const sentinelRef   = useRef<HTMLDivElement>(null);
 
@@ -259,7 +260,8 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
 
   // Loads the first page and merges into state (preserving older calls already scrolled in).
   async function loadCalls() {
-    const qs = new URLSearchParams({ limit: "30", ...(period !== "all" ? { period } : {}), ...(viewAs ? { viewAs } : {}) });
+    const p = periodRef.current;
+    const qs = new URLSearchParams({ limit: "30", ...(p !== "all" ? { period: p } : {}), ...(viewAs ? { viewAs } : {}) });
     const res = await fetch(`/api/calls?${qs}`, { cache: "no-store" });
     if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
     const { calls: fresh, nextCursor: nc, total }: { calls: CallItem[]; nextCursor: string | null; total: number | null } =
@@ -373,6 +375,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
 
   async function handlePeriodChange(p: PeriodKey) {
     setPeriod(p);
+    periodRef.current = p;
     await Promise.all([loadCallsForPeriod(p), loadAnalytics(p)]);
   }
 
