@@ -144,7 +144,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
   const isFree    = !isTestAccount && planId === "free";
   const isStarter = !isTestAccount && planId === "starter";
 
-  const [period, setPeriod]         = useState<PeriodKey>("month");
+  const [period, setPeriod]         = useState<PeriodKey>("today");
   const [analyticsData, setAnalyticsData] = useState<{ ownerAnalytics: OwnerAnalytics; marketerAnalytics: MarketerAnalytics }>({ ownerAnalytics, marketerAnalytics });
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [calls, setCalls]           = useState<CallItem[]>([]);
@@ -165,7 +165,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"calls" | "owner" | "marketer">("calls");
-  const periodRef     = useRef<PeriodKey>("month");
+  const periodRef     = useRef<PeriodKey>("today");
   const fileInputRef  = useRef<HTMLInputElement>(null);
   const sentinelRef   = useRef<HTMLDivElement>(null);
 
@@ -399,7 +399,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
   useEffect(() => {
     // Initial load with default period ("month")
     void loadCalls();
-    void loadAnalytics("month");
+    void loadAnalytics("today");
     const id = window.setInterval(() => void loadCalls(), 3000);
     return () => window.clearInterval(id);
   // eslint-disable-next-line react-hooks/exhaustive-deps
