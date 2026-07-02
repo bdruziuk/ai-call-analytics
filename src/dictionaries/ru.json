@@ -283,7 +283,24 @@
       "missedOpportunities": "Упущенные возможности",
       "insights": "Наблюдения",
       "boolTrue": "Да",
-      "boolFalse": "Нет"
+      "boolFalse": "Нет",
+      "kpiKeys": {
+        "drinksOffered": "Предложены напитки",
+        "saucesOffered": "Предложены соусы",
+        "dessertsOffered": "Предложены десерты",
+        "addressConfirmed": "Адрес подтверждён",
+        "deliveryTimeConfirmed": "Время доставки подтверждено",
+        "paymentMethodClarified": "Способ оплаты уточнён",
+        "alternativeOfferedIfUnavailable": "Предложена альтернатива при отсутствии",
+        "greetingDone": "Приветствие выполнено",
+        "upsellOffered": "Апсейл предложен",
+        "orderConfirmed": "Заказ подтверждён",
+        "clientNameUsed": "Имя клиента использовано",
+        "callbackOffered": "Перезвон предложен",
+        "complaintHandled": "Жалоба обработана",
+        "priceObjectionHandled": "Возражение по цене обработано",
+        "crossSellOffered": "Кросс-сейл предложен"
+      }
     },
     "empty": {
       "noIssues": "Проблем не выявлено",

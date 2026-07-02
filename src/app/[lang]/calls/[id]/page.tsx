@@ -372,7 +372,9 @@ export default async function CallDetailsPage({ params }: Props) {
                             {isTrue ? "✓" : "✗"}
                           </span>
                         )}
-                        <span className="font-medium text-slate-700">{key}</span>
+                        <span className="font-medium text-slate-700">
+                          {(t.callDetail.industry.kpiKeys as Record<string, string>)[key] ?? key}
+                        </span>
                         {!isBool && (
                           <span className="ml-auto text-slate-500">{String(val)}</span>
                         )}

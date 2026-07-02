@@ -283,7 +283,24 @@
       "missedOpportunities": "Missed Opportunities",
       "insights": "Observations",
       "boolTrue": "Yes",
-      "boolFalse": "No"
+      "boolFalse": "No",
+      "kpiKeys": {
+        "drinksOffered": "Drinks offered",
+        "saucesOffered": "Sauces offered",
+        "dessertsOffered": "Desserts offered",
+        "addressConfirmed": "Address confirmed",
+        "deliveryTimeConfirmed": "Delivery time confirmed",
+        "paymentMethodClarified": "Payment method clarified",
+        "alternativeOfferedIfUnavailable": "Alternative offered if unavailable",
+        "greetingDone": "Greeting done",
+        "upsellOffered": "Upsell offered",
+        "orderConfirmed": "Order confirmed",
+        "clientNameUsed": "Client name used",
+        "callbackOffered": "Callback offered",
+        "complaintHandled": "Complaint handled",
+        "priceObjectionHandled": "Price objection handled",
+        "crossSellOffered": "Cross-sell offered"
+      }
     },
     "empty": {
       "noIssues": "No issues found",

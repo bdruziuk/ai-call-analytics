@@ -283,7 +283,24 @@
       "missedOpportunities": "Пропущені можливості",
       "insights": "Спостереження",
       "boolTrue": "Так",
-      "boolFalse": "Ні"
+      "boolFalse": "Ні",
+      "kpiKeys": {
+        "drinksOffered": "Запропоновано напої",
+        "saucesOffered": "Запропоновано соуси",
+        "dessertsOffered": "Запропоновано десерти",
+        "addressConfirmed": "Адресу підтверджено",
+        "deliveryTimeConfirmed": "Час доставки підтверджено",
+        "paymentMethodClarified": "Спосіб оплати уточнено",
+        "alternativeOfferedIfUnavailable": "Запропоновано альтернативу при відсутності",
+        "greetingDone": "Привітання виконано",
+        "upsellOffered": "Апсейл запропоновано",
+        "orderConfirmed": "Замовлення підтверджено",
+        "clientNameUsed": "Ім'я клієнта використано",
+        "callbackOffered": "Передзвін запропоновано",
+        "complaintHandled": "Скарга опрацьована",
+        "priceObjectionHandled": "Заперечення щодо ціни опрацьовано",
+        "crossSellOffered": "Крос-сейл запропоновано"
+      }
     },
     "empty": {
       "noIssues": "Проблем не виявлено",
