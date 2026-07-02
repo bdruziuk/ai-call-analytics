@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 
   const whereBase = { userId, ...(periodFilter ? { createdAt: periodFilter } : {}) };
 
-  const [calls, total] = await Promise.all([
+  const [calls, total, periodStats] = await Promise.all([
     db.call.findMany({
       where: {
         userId,
@@ -55,6 +55,11 @@ export async function GET(request: Request) {
     }),
     // Only count on first page (no cursor) to avoid extra query on pagination
     cursor ? Promise.resolve(null) : db.call.count({ where: whereBase }),
+    // Compute period-accurate stats on first page only
+    cursor ? Promise.resolve(null) : db.call.findMany({
+      where: { ...whereBase, status: { in: ['completed', 'failed'] } },
+      select: { status: true, score: true, saleStatus: true },
+    }),
   ]);
 
   const hasMore = calls.length > limit;
@@ -64,7 +69,20 @@ export async function GET(request: Request) {
     ? calls[calls.length - 1].createdAt.toISOString()
     : null;
 
-  return NextResponse.json({ calls, nextCursor, total }, {
+  let stats: { averageScore: number; saleRate: number; failedCalls: number } | null = null;
+  if (periodStats) {
+    const completed = periodStats.filter((c) => c.status === 'completed');
+    const scoredCalls = completed.filter((c) => c.score !== null);
+    const avgScore = scoredCalls.length > 0
+      ? Math.round(scoredCalls.reduce((s, c) => s + (c.score ?? 0), 0) / scoredCalls.length)
+      : 0;
+    const sold = completed.filter((c) => c.saleStatus === 'sold').length;
+    const saleRate = completed.length > 0 ? Math.round((sold / completed.length) * 100) : 0;
+    const failed = periodStats.filter((c) => c.status === 'failed').length;
+    stats = { averageScore: avgScore, saleRate, failedCalls: failed };
+  }
+
+  return NextResponse.json({ calls, nextCursor, total, stats }, {
     headers: { 'Cache-Control': 'no-store' },
   });
 }

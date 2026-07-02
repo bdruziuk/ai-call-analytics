@@ -149,6 +149,9 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [calls, setCalls]           = useState<CallItem[]>([]);
   const [totalCalls, setTotalCalls] = useState<number>(0);
+  const [averageScore, setAverageScore] = useState<number>(0);
+  const [saleRate, setSaleRate]         = useState<number>(0);
+  const [failedCalls, setFailedCalls]   = useState<number>(0);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [files, setFiles]           = useState<File[]>([]);
@@ -247,15 +250,29 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
     }
   }
 
+  type CallsResponse = {
+    calls: CallItem[];
+    nextCursor: string | null;
+    total: number | null;
+    stats: { averageScore: number; saleRate: number; failedCalls: number } | null;
+  };
+
+  function applyStats(stats: CallsResponse["stats"]) {
+    if (!stats) return;
+    setAverageScore(stats.averageScore);
+    setSaleRate(stats.saleRate);
+    setFailedCalls(stats.failedCalls);
+  }
+
   async function loadCallsForPeriod(p: PeriodKey) {
     const qs = new URLSearchParams({ limit: "30", ...(p !== "all" ? { period: p } : {}), ...(viewAs ? { viewAs } : {}) });
     const res = await fetch(`/api/calls?${qs}`, { cache: "no-store" });
     if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
-    const { calls: fresh, nextCursor: nc, total }: { calls: CallItem[]; nextCursor: string | null; total: number | null } =
-      await res.json();
+    const { calls: fresh, nextCursor: nc, total, stats }: CallsResponse = await res.json();
     setCalls(fresh);
     setNextCursor(nc);
     if (total != null) setTotalCalls(total);
+    applyStats(stats);
   }
 
   // Loads the first page and merges into state (preserving older calls already scrolled in).
@@ -264,8 +281,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
     const qs = new URLSearchParams({ limit: "30", ...(p !== "all" ? { period: p } : {}), ...(viewAs ? { viewAs } : {}) });
     const res = await fetch(`/api/calls?${qs}`, { cache: "no-store" });
     if (!res.ok || !(res.headers.get("content-type") ?? "").includes("application/json")) return;
-    const { calls: fresh, nextCursor: nc, total }: { calls: CallItem[]; nextCursor: string | null; total: number | null } =
-      await res.json();
+    const { calls: fresh, nextCursor: nc, total, stats }: CallsResponse = await res.json();
     setCalls((prev) => {
       const freshIds = new Set(fresh.map((c) => c.id));
       const extra    = prev.filter((c) => !freshIds.has(c.id));
@@ -273,6 +289,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
     });
     setNextCursor(nc);
     if (total != null) setTotalCalls(total);
+    applyStats(stats);
   }
 
   const loadMore = useCallback(async () => {
@@ -394,13 +411,6 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
 
   const sortedCalls = sortCalls(filteredCalls, sortKey, sortDir);
 
-  const completedCalls = filteredCalls.filter((c) => c.status === "completed");
-  const averageScore = completedCalls.length > 0
-    ? Math.round(completedCalls.reduce((s, c) => s + (c.score ?? 0), 0) / completedCalls.length)
-    : 0;
-  const soldCalls = completedCalls.filter((c) => c.saleStatus === "sold").length;
-  const saleRate = completedCalls.length > 0 ? Math.round((soldCalls / completedCalls.length) * 100) : 0;
-  const failedCalls = filteredCalls.filter((c) => c.status === "failed").length;
 
   return (
     <main className="mx-auto max-w-6xl p-4 md:p-8">
