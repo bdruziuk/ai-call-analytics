@@ -274,7 +274,16 @@
       "objections": "Возражения клиента",
       "managerMistakes": "Ошибки менеджера",
       "detailedReport": "Детальный репорт",
-      "transcript": "Транскрипт звонка"
+      "transcript": "Транскрипт звонка",
+      "industryInsights": "Отраслевой анализ"
+    },
+    "industry": {
+      "kpi": "KPI",
+      "warnings": "Предупреждения",
+      "missedOpportunities": "Упущенные возможности",
+      "insights": "Наблюдения",
+      "boolTrue": "Да",
+      "boolFalse": "Нет"
     },
     "empty": {
       "noIssues": "Проблем не выявлено",

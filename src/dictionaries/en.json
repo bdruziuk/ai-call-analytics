@@ -274,7 +274,16 @@
       "objections": "Customer Objections",
       "managerMistakes": "Manager Mistakes",
       "detailedReport": "Detailed Report",
-      "transcript": "Call Transcript"
+      "transcript": "Call Transcript",
+      "industryInsights": "Industry Analysis"
+    },
+    "industry": {
+      "kpi": "KPI",
+      "warnings": "Warnings",
+      "missedOpportunities": "Missed Opportunities",
+      "insights": "Observations",
+      "boolTrue": "Yes",
+      "boolFalse": "No"
     },
     "empty": {
       "noIssues": "No issues found",

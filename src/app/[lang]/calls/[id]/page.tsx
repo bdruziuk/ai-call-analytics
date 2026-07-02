@@ -347,21 +347,18 @@ export default async function CallDetailsPage({ params }: Props) {
         <section className="mb-6 rounded-2xl border border-brand-100 bg-brand-50/40 p-6 shadow-sm">
           <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-slate-900">
             <span className="h-1 w-4 rounded-full bg-brand-500 inline-block" />
-            {"industryInsights" in t.callDetail.sections
-              ? String((t.callDetail.sections as Record<string, string>)["industryInsights"])
-              : "Галузевий аналіз"}
+            {t.callDetail.sections.industryInsights}
           </h2>
 
           <div className="space-y-5">
             {/* KPIs grid */}
             {industryData.kpis && Object.keys(industryData.kpis).length > 0 && (
               <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">KPI</h3>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">{t.callDetail.industry.kpi}</h3>
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {Object.entries(industryData.kpis).map(([key, val]) => {
-                    const isBool  = typeof val === "boolean";
-                    const isTrue  = val === true || val === "true";
-                    const isFalse = val === false || val === "false";
+                    const isBool = typeof val === "boolean" || val === "true" || val === "false";
+                    const isTrue = val === true || val === "true";
                     return (
                       <div key={key} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${
                         isBool
@@ -375,9 +372,14 @@ export default async function CallDetailsPage({ params }: Props) {
                             {isTrue ? "✓" : "✗"}
                           </span>
                         )}
-                        <span className="font-medium text-slate-700 capitalize">{key.replace(/([A-Z])/g, " $1").trim()}</span>
+                        <span className="font-medium text-slate-700">{key}</span>
                         {!isBool && (
                           <span className="ml-auto text-slate-500">{String(val)}</span>
+                        )}
+                        {isBool && (
+                          <span className={`ml-auto text-xs font-semibold ${isTrue ? "text-emerald-600" : "text-red-500"}`}>
+                            {isTrue ? t.callDetail.industry.boolTrue : t.callDetail.industry.boolFalse}
+                          </span>
                         )}
                       </div>
                     );
@@ -389,7 +391,7 @@ export default async function CallDetailsPage({ params }: Props) {
             {/* Warnings */}
             {(industryData.warnings?.length ?? 0) > 0 && (
               <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-600">Попередження</h3>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-amber-600">{t.callDetail.industry.warnings}</h3>
                 <ul className="space-y-1.5">
                   {industryData.warnings!.map((w, i) => (
                     <li key={i} className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
@@ -403,7 +405,7 @@ export default async function CallDetailsPage({ params }: Props) {
             {/* Missed opportunities */}
             {(industryData.missedOpportunities?.length ?? 0) > 0 && (
               <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-red-500">Пропущені можливості</h3>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-red-500">{t.callDetail.industry.missedOpportunities}</h3>
                 <ul className="space-y-1.5">
                   {industryData.missedOpportunities!.map((m, i) => (
                     <li key={i} className="rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-sm text-red-800">
@@ -417,7 +419,7 @@ export default async function CallDetailsPage({ params }: Props) {
             {/* Insights */}
             {(industryData.insights?.length ?? 0) > 0 && (
               <div>
-                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-600">Спостереження</h3>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-brand-600">{t.callDetail.industry.insights}</h3>
                 <ul className="space-y-1.5">
                   {industryData.insights!.map((ins, i) => (
                     <li key={i} className="rounded-xl border border-brand-100 bg-brand-50 px-4 py-2.5 text-sm text-brand-800">

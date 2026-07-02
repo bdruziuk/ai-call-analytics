@@ -274,7 +274,16 @@
       "objections": "Заперечення клієнта",
       "managerMistakes": "Помилки менеджера",
       "detailedReport": "Детальний репорт",
-      "transcript": "Транскрипт дзвінка"
+      "transcript": "Транскрипт дзвінка",
+      "industryInsights": "Галузевий аналіз"
+    },
+    "industry": {
+      "kpi": "KPI",
+      "warnings": "Попередження",
+      "missedOpportunities": "Пропущені можливості",
+      "insights": "Спостереження",
+      "boolTrue": "Так",
+      "boolFalse": "Ні"
     },
     "empty": {
       "noIssues": "Проблем не виявлено",
