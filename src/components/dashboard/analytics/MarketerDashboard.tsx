@@ -65,7 +65,7 @@ export function MarketerDashboard({ data }: Props) {
         />
         <DashboardKpiCard
           icon={<Trash2 size={18} />}
-          label="Junk Lead Rate"
+          label="Частка сміттєвих лідів"
           value={`${kpi.junkLeadRate}%`}
           description="Сміттєві / нецільові дзвінки"
           trend={{ value: kpi.junkLeadTrend, invertPolarity: true }}
@@ -85,6 +85,7 @@ export function MarketerDashboard({ data }: Props) {
           value={kpi.topRefusalReason}
           description="Найчастіша причина незакритої угоди"
           accentColor="red"
+          smallValue
         />
       </div>
 
@@ -105,7 +106,7 @@ export function MarketerDashboard({ data }: Props) {
                 <span>Дзвінки: <strong>{src.calls}</strong></span>
                 <span>Замовлення: <strong>{src.orders}</strong></span>
                 <span>Конверсія: <strong>{src.conversionRate}%</strong></span>
-                <span>Junk: <strong className={src.junkLeadRate > 30 ? "text-red-500" : ""}>{src.junkLeadRate}%</strong></span>
+                <span>Сміттєві: <strong className={src.junkLeadRate > 30 ? "text-red-500" : ""}>{src.junkLeadRate}%</strong></span>
                 <span className="col-span-2">Дохід: <strong className="text-emerald-600">₴{src.estimatedRevenue.toLocaleString()}</strong></span>
               </div>
             </div>
@@ -117,7 +118,7 @@ export function MarketerDashboard({ data }: Props) {
           <table className="w-full text-sm">
             <thead className="bg-slate-50/70 border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
               <tr>
-                {["Джерело", "Кампанія", "Дзвінки", "Замовлення", "Конверсія", "Junk %", "Дохід ₴", "Рекомендація"].map((h) => (
+                {["Джерело", "Кампанія", "Дзвінки", "Замовлення", "Конверсія", "Сміттєві %", "Дохід ₴", "Рекомендація"].map((h) => (
                   <th key={h} className="px-4 py-2.5 text-left font-semibold">{h}</th>
                 ))}
               </tr>

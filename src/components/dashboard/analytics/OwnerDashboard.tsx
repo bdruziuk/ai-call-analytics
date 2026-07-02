@@ -126,7 +126,7 @@ export function OwnerDashboard({ data, lang }: Props) {
                 <span>AHT: <strong>{fmtAht(op.aht)}</strong></span>
                 <span>Апсейл: <strong>{op.upsellRate}%</strong></span>
                 <span>Чеки/год: <strong>{op.closedChecksPerHour}</strong></span>
-                <span>Waste: <strong>{op.wasteTimeRatio}%</strong></span>
+                <span>Холостий час: <strong>{op.wasteTimeRatio}%</strong></span>
                 <span>Ввічливість: <strong>{op.politenessScore}/10</strong></span>
               </div>
             </div>
@@ -138,7 +138,7 @@ export function OwnerDashboard({ data, lang }: Props) {
           <table className="w-full text-sm">
             <thead className="bg-slate-50/70 border-b border-slate-100 text-xs text-slate-500 uppercase tracking-wide">
               <tr>
-                {["Оператор", "Конверсія", "AHT", "Апсейл", "Чеки/год", "Waste Time", "Ввічливість", "Статус"].map((h) => (
+                {["Оператор", "Конверсія", "AHT", "Апсейл", "Чеки/год", "Холостий час", "Ввічливість", "Статус"].map((h) => (
                   <th key={h} className="px-4 py-2.5 text-left font-semibold">{h}</th>
                 ))}
               </tr>
@@ -199,7 +199,7 @@ export function OwnerDashboard({ data, lang }: Props) {
             {
               Icon: Package,
               color: "bg-orange-100 text-orange-600",
-              title: "Out-of-stock leaks",
+              title: "Витік замовлень через відсутність товару",
               value: "8",
               desc: "Втрати через відсутність позиції та ненадання альтернативи",
               loss: "₴1 680",
@@ -207,7 +207,7 @@ export function OwnerDashboard({ data, lang }: Props) {
             {
               Icon: Zap,
               color: "bg-amber-100 text-amber-700",
-              title: "Waste Time Ratio",
+              title: "Частка холостого часу",
               value: "22%",
               desc: "Частка часу операторів витрачена на нецільові / мертві ліди",
               loss: undefined,

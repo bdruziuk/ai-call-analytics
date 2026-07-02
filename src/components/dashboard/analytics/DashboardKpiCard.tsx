@@ -14,6 +14,7 @@ type Props = {
   description?: string;
   trend?: Trend;
   accentColor?: "red" | "green" | "amber" | "brand";
+  smallValue?: boolean;
 };
 
 function trendColor(value: number, invert = false) {
@@ -35,7 +36,7 @@ const ACCENT: Record<string, { icon: string; border: string }> = {
   brand: { icon: "bg-brand-100 text-brand-600", border: "border-brand-100" },
 };
 
-export function DashboardKpiCard({ icon, label, value, description, trend, accentColor = "brand" }: Props) {
+export function DashboardKpiCard({ icon, label, value, description, trend, accentColor = "brand", smallValue = false }: Props) {
   const ac = ACCENT[accentColor] ?? ACCENT.brand;
 
   return (
@@ -47,7 +48,7 @@ export function DashboardKpiCard({ icon, label, value, description, trend, accen
         <span className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</span>
       </div>
 
-      <p className="text-3xl font-extrabold text-slate-900">{value}</p>
+      <p className={`font-extrabold text-slate-900 ${smallValue ? "text-sm leading-snug" : "text-3xl"}`}>{value}</p>
 
       {description && (
         <p className="mt-0.5 text-xs text-slate-400">{description}</p>
