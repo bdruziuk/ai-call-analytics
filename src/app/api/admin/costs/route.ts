@@ -12,6 +12,7 @@ function isAdminEmail(email: string | null | undefined): boolean {
 type CostResult = {
   totalUsd: number | null;
   periodLabel: string;
+  balanceUsd?: number | null;
   error?: string;
 };
 
@@ -23,28 +24,48 @@ async function fetchOpenAICosts(): Promise<CostResult> {
   const start = new Date(now.getFullYear(), now.getMonth(), 1);
   const startTs = Math.floor(start.getTime() / 1000);
   const endTs   = Math.floor(now.getTime()   / 1000);
+  const label   = start.toLocaleDateString("uk", { month: "long", year: "numeric" });
 
   try {
-    const res = await fetch(
-      `https://api.openai.com/v1/organization/costs?start_time=${startTs}&end_time=${endTs}&bucket_width=1d&limit=31`,
-      { headers: { Authorization: `Bearer ${adminKey}` }, next: { revalidate: 0 } },
-    );
-    if (!res.ok) {
-      const text = await res.text();
-      return { totalUsd: null, periodLabel: "", error: `OpenAI ${res.status}: ${text.slice(0, 120)}` };
+    const [costsRes, creditsRes] = await Promise.all([
+      fetch(
+        `https://api.openai.com/v1/organization/costs?start_time=${startTs}&end_time=${endTs}&bucket_width=1d&limit=31`,
+        { headers: { Authorization: `Bearer ${adminKey}` }, next: { revalidate: 0 } },
+      ),
+      fetch(
+        "https://api.openai.com/v1/dashboard/billing/credit_grants",
+        { headers: { Authorization: `Bearer ${adminKey}` }, next: { revalidate: 0 } },
+      ),
+    ]);
+
+    if (!costsRes.ok) {
+      const text = await costsRes.text();
+      return { totalUsd: null, periodLabel: "", error: `OpenAI ${costsRes.status}: ${text.slice(0, 120)}` };
     }
-    const data = await res.json() as {
+
+    const data = await costsRes.json() as {
       data?: { results?: { amount?: { value?: number } }[] }[];
     };
-
     let total = 0;
     for (const bucket of data.data ?? []) {
       for (const r of bucket.results ?? []) {
         total += r.amount?.value ?? 0;
       }
     }
-    const label = start.toLocaleDateString("uk", { month: "long", year: "numeric" });
-    return { totalUsd: Math.round(total * 100) / 100, periodLabel: label };
+
+    let balanceUsd: number | null = null;
+    if (creditsRes.ok) {
+      const credits = await creditsRes.json() as {
+        total_available?: number;
+        total_granted?: number;
+        total_used?: number;
+      };
+      if (credits.total_available != null) {
+        balanceUsd = Math.round(credits.total_available * 100) / 100;
+      }
+    }
+
+    return { totalUsd: Math.round(total * 100) / 100, periodLabel: label, balanceUsd };
   } catch (err) {
     return { totalUsd: null, periodLabel: "", error: String(err) };
   }
@@ -56,7 +77,6 @@ async function fetchRailwayCosts(): Promise<CostResult> {
   if (!token)     return { totalUsd: null, periodLabel: "", error: "RAILWAY_TOKEN not set" };
   if (!projectId) return { totalUsd: null, periodLabel: "", error: "RAILWAY_PROJECT_ID not set" };
 
-  // Two queries: first resolve workspaceId from project, then fetch customer.currentUsage
   const projectQuery = `query { project(id: "${projectId}") { workspaceId } }`;
 
   async function gql(body: object) {
@@ -79,17 +99,29 @@ async function fetchRailwayCosts(): Promise<CostResult> {
     const workspaceId = (proj.data?.project as { workspaceId?: string } | undefined)?.workspaceId;
     if (!workspaceId) throw new Error("workspaceId not found on project");
 
-    const wsQuery = `query { workspace(workspaceId: "${workspaceId}") { customer { currentUsage } } }`;
+    const wsQuery = `query {
+      workspace(workspaceId: "${workspaceId}") {
+        customer { currentUsage creditBalance remainingUsageCreditBalance }
+      }
+    }`;
     const ws = await gql({ query: wsQuery });
     if (ws.errors?.length) throw new Error(ws.errors[0].message);
 
-    const cost = ((ws.data?.workspace as { customer?: { currentUsage?: number } } | undefined)
-      ?.customer?.currentUsage) ?? null;
-    const now  = new Date();
-    const label = new Date(now.getFullYear(), now.getMonth(), 1)
+    type Customer = { currentUsage?: number; creditBalance?: number; remainingUsageCreditBalance?: number };
+    const customer = (ws.data?.workspace as { customer?: Customer } | undefined)?.customer;
+
+    const cost    = customer?.currentUsage ?? null;
+    // creditBalance = prepaid credits; remainingUsageCreditBalance = usage credits remaining
+    const balance = customer?.remainingUsageCreditBalance ?? customer?.creditBalance ?? null;
+
+    const label = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
       .toLocaleDateString("uk", { month: "long", year: "numeric" });
 
-    return { totalUsd: cost !== null ? Math.round(cost * 100) / 100 : null, periodLabel: label };
+    return {
+      totalUsd:   cost    !== null ? Math.round(cost    * 100) / 100 : null,
+      balanceUsd: balance !== null ? Math.round(balance * 100) / 100 : null,
+      periodLabel: label,
+    };
   } catch (err) {
     return { totalUsd: null, periodLabel: "", error: String(err) };
   }

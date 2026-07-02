@@ -189,7 +189,7 @@ function Panel({ title, sub, right, children, className = "" }: {
   );
 }
 
-type CostResult = { totalUsd: number | null; periodLabel: string; error?: string };
+type CostResult = { totalUsd: number | null; periodLabel: string; balanceUsd?: number | null; error?: string };
 type Costs = { openai: CostResult; railway: CostResult };
 
 /* ── Main component ── */
@@ -426,10 +426,17 @@ export function RealtimeDashboard({ lang }: { lang: string }) {
               ) : data?.error ? (
                 <p className="text-xs text-red-400 truncate" title={data.error}>{data.error}</p>
               ) : data?.totalUsd !== null && data?.totalUsd !== undefined ? (
-                <p className="text-xl font-bold text-slate-900 tabular-nums">
-                  ${data.totalUsd.toFixed(2)}
-                  <span className="ml-1 text-xs font-normal text-slate-400">USD</span>
-                </p>
+                <>
+                  <p className="text-xl font-bold text-slate-900 tabular-nums">
+                    ${data.totalUsd.toFixed(2)}
+                    <span className="ml-1 text-xs font-normal text-slate-400">USD</span>
+                  </p>
+                  {data.balanceUsd != null && (
+                    <p className="text-[10px] text-slate-400 tabular-nums">
+                      залишок: <span className="font-semibold text-emerald-600">${data.balanceUsd.toFixed(2)}</span>
+                    </p>
+                  )}
+                </>
               ) : (
                 <p className="text-sm text-slate-300">—</p>
               )}
