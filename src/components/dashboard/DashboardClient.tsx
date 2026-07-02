@@ -624,7 +624,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
               <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#94a3b8" }} />
               <Tooltip
                 contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }}
-                formatter={(val: number, name: string) => {
+                formatter={(val, name: string) => {
                   const labels: Record<string, string> = {
                     total:     t.dashboard.chart.legendTotal,
                     completed: t.dashboard.chart.legendCompleted,
