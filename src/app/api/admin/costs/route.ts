@@ -71,7 +71,10 @@ async function fetchRailwayCosts(): Promise<CostResult> {
       body:    JSON.stringify({ query, variables: { id: projectId } }),
       next:    { revalidate: 0 },
     });
-    if (!res.ok) return { totalUsd: null, periodLabel: "", error: `Railway HTTP ${res.status}` };
+    if (!res.ok) {
+      const text = await res.text();
+      return { totalUsd: null, periodLabel: "", error: `Railway HTTP ${res.status}: ${text.slice(0, 200)}` };
+    }
 
     const json = await res.json() as {
       data?: { project?: { estimatedUsage?: { estimatedCost?: number } } };
