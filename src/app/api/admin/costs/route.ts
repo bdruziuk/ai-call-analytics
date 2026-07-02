@@ -56,36 +56,35 @@ async function fetchRailwayCosts(): Promise<CostResult> {
   if (!token)     return { totalUsd: null, periodLabel: "", error: "RAILWAY_TOKEN not set" };
   if (!projectId) return { totalUsd: null, periodLabel: "", error: "RAILWAY_PROJECT_ID not set" };
 
-  const query = `
-    query GetProject($id: String!) {
-      project(id: $id) {
-        estimatedUsage { estimatedCost }
-      }
-    }
-  `;
+  // Two queries: first resolve workspaceId from project, then fetch customer.currentUsage
+  const projectQuery = `query { project(id: "${projectId}") { workspaceId } }`;
 
-  try {
-    const res = await fetch("https://backboard.railway.app/graphql/v2", {
+  async function gql(body: object) {
+    const r = await fetch("https://backboard.railway.app/graphql/v2", {
       method:  "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body:    JSON.stringify({ query, variables: { id: projectId } }),
+      body:    JSON.stringify(body),
       next:    { revalidate: 0 },
     });
-    if (!res.ok) {
-      const text = await res.text();
-      return { totalUsd: null, periodLabel: "", error: `Railway HTTP ${res.status}: ${text.slice(0, 200)}` };
+    if (!r.ok) {
+      const text = await r.text();
+      throw new Error(`Railway HTTP ${r.status}: ${text.slice(0, 200)}`);
     }
+    return r.json() as Promise<{ data?: Record<string, unknown>; errors?: { message: string }[] }>;
+  }
 
-    const json = await res.json() as {
-      data?: { project?: { estimatedUsage?: { estimatedCost?: number } } };
-      errors?: { message: string }[];
-    };
+  try {
+    const proj = await gql({ query: projectQuery });
+    if (proj.errors?.length) throw new Error(proj.errors[0].message);
+    const workspaceId = (proj.data?.project as { workspaceId?: string } | undefined)?.workspaceId;
+    if (!workspaceId) throw new Error("workspaceId not found on project");
 
-    if (json.errors?.length) {
-      return { totalUsd: null, periodLabel: "", error: json.errors[0].message };
-    }
+    const wsQuery = `query { workspace(workspaceId: "${workspaceId}") { customer { currentUsage } } }`;
+    const ws = await gql({ query: wsQuery });
+    if (ws.errors?.length) throw new Error(ws.errors[0].message);
 
-    const cost = json.data?.project?.estimatedUsage?.estimatedCost ?? null;
+    const cost = ((ws.data?.workspace as { customer?: { currentUsage?: number } } | undefined)
+      ?.customer?.currentUsage) ?? null;
     const now  = new Date();
     const label = new Date(now.getFullYear(), now.getMonth(), 1)
       .toLocaleDateString("uk", { month: "long", year: "numeric" });
