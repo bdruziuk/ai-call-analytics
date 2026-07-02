@@ -121,6 +121,118 @@
       "analyzing": "AI-аналіз",
       "completed": "Готово",
       "failed": "Помилка"
+    },
+    "tabs": {
+      "calls": "📞 Дзвінки",
+      "owner": "👔 Власник / Директор",
+      "marketer": "📣 Маркетолог"
+    },
+    "periods": {
+      "all": "Увесь час",
+      "month": "Місяць",
+      "week": "Тиждень",
+      "3days": "3 дні",
+      "today": "Сьогодні"
+    },
+    "updating": "Оновлення…",
+    "trendVs": "vs. минулий тиждень",
+    "owner": {
+      "kpi": {
+        "lostRevenue": "Злитий прибуток",
+        "lostRevenueDesc": "Оцінка втрат через помилки операторів",
+        "conversionRate": "Конверсія в чеки",
+        "conversionDesc": "Відповілих дзвінків → замовлення",
+        "upsellRate": "Виконання апсейлу",
+        "upsellDesc": "Дзвінків із пропозицією доп. товарів",
+        "criticalCalls": "Критичні помилки",
+        "criticalDesc": "Конфлікти, грубість, довге очікування",
+        "callsSuffix": " дзв."
+      },
+      "status": {
+        "good": "Добре",
+        "attention": "Потребує уваги",
+        "critical": "Критично"
+      },
+      "lostRevenueTitle": "📉 Злитий прибуток по днях (₴)",
+      "chartTooltipLost": "Злито",
+      "operatorKpiTitle": "👥 KPI операторів",
+      "operatorCols": {
+        "operator": "Оператор",
+        "conversion": "Конверсія",
+        "aht": "AHT",
+        "upsell": "Апсейл",
+        "checksPerHour": "Чеки/год",
+        "wasteTime": "Холостий час",
+        "politeness": "Ввічливість",
+        "status": "Статус"
+      },
+      "insightsTitle": "Операційні інсайти",
+      "insight1Title": "Дзвінок без альтернативи",
+      "insight1Desc": "Оператор не запропонував заміну коли товар закінчився",
+      "insight1Loss": "₴2 940",
+      "insight2Title": "Витік замовлень через відсутність товару",
+      "insight2Desc": "Втрати через відсутність позиції та ненадання альтернативи",
+      "insight2Loss": "₴1 680",
+      "insight3Title": "Частка холостого часу",
+      "insight3Desc": "Частка часу операторів витрачена на нецільові / мертві ліди",
+      "insight4Title": "Емоційне вигорання",
+      "insight4Desc": "Монотонна / роботизована мова, низька залученість у дзвінку",
+      "estimatedLoss": "Оцін. збиток:",
+      "criticalCallsTitle": "🚨 Критичні дзвінки — потребують уваги",
+      "noCriticalCalls": "Критичних дзвінків немає — відмінно!",
+      "criticalCols": {
+        "datetime": "Дата / час",
+        "operator": "Оператор",
+        "reason": "Причина",
+        "loss": "Оцін. збиток"
+      },
+      "openCallMobile": "Відкрити дзвінок →",
+      "openCallDesktop": "Дзвінок →"
+    },
+    "marketer": {
+      "kpi": {
+        "adCalls": "Дзвінки з реклами",
+        "adCallsDesc": "За поточний тиждень",
+        "adCallsSuffix": " дзв.",
+        "junkLeadRate": "Частка сміттєвих лідів",
+        "junkLeadDesc": "Сміттєві / нецільові дзвінки",
+        "adConversion": "Конверсія реклами",
+        "adConversionDesc": "Рекламні дзвінки → замовлення",
+        "topRefusal": "Топ причина відмови",
+        "topRefusalDesc": "Найчастіша причина незакритої угоди"
+      },
+      "recommendation": {
+        "scale": "Масштабувати",
+        "check": "Перевірити оголош.",
+        "disable": "Вимкнути кампанію",
+        "improve_landing": "Покращити посадкову"
+      },
+      "junkReason": {
+        "wrong_intent": "Помилкова заявка",
+        "did_not_apply": "Не залишав заявку",
+        "accidental": "Випадковий дзвінок",
+        "non_target": "Нецільовий клієнт"
+      },
+      "trafficTitle": "📊 Ефективність джерел трафіку",
+      "trafficCols": {
+        "source": "Джерело",
+        "campaign": "Кампанія",
+        "calls": "Дзвінки",
+        "orders": "Замовлення",
+        "conversion": "Конверсія",
+        "junk": "Сміттєві %",
+        "revenue": "Дохід ₴",
+        "recommendation": "Рекомендація"
+      },
+      "junkLeadsTitle": "🗑 Сміттєві ліди",
+      "junkLeadsDesc": "від усіх рекламних дзвінків є нецільовими або випадковими",
+      "refusalTitle": "❌ Причини відмов",
+      "demandTitle": "☁️ Хмара запитів — що шукають клієнти",
+      "promotionsTitle": "🎁 Акції та новинки",
+      "customerMentions": "Клієнти згадують",
+      "operatorsPush": "Оператори просувають",
+      "operatorsUnderperform": "Оператори просувають акцію на {gap}% рідше ніж клієнти про неї питають",
+      "operatorsOverperform": "Оператори активно просувають акцію"
     }
   },
   "calls": {

@@ -36,14 +36,6 @@ type SalesProfile = {
 
 type PeriodKey = "all" | "month" | "week" | "3days" | "today";
 
-const PERIOD_OPTIONS: { key: PeriodKey; label: string }[] = [
-  { key: "all",   label: "Увесь час"      },
-  { key: "month", label: "Місяць"         },
-  { key: "week",  label: "Тиждень"        },
-  { key: "3days", label: "3 дні"          },
-  { key: "today", label: "Сьогодні"       },
-];
-
 type Props = {
   t: Dictionary;
   lang: string;
@@ -424,9 +416,9 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
       <div className="mb-4 flex flex-col gap-3 md:mb-6">
         <div className="flex gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1">
           {([
-            { id: "calls"    as const, label: "📞 Дзвінки"           },
-            { id: "owner"    as const, label: "👔 Власник / Директор" },
-            { id: "marketer" as const, label: "📣 Маркетолог"         },
+            { id: "calls"    as const, label: t.dashboard.tabs.calls   },
+            { id: "owner"    as const, label: t.dashboard.tabs.owner   },
+            { id: "marketer" as const, label: t.dashboard.tabs.marketer },
           ]).map(({ id, label }) => (
             <button
               key={id}
@@ -444,7 +436,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
 
         {/* Period filter */}
         <div className="flex flex-wrap gap-2">
-          {PERIOD_OPTIONS.map(({ key, label }) => (
+          {(["all", "month", "week", "3days", "today"] as PeriodKey[]).map((key) => (
             <button
               key={key}
               onClick={() => void handlePeriodChange(key)}
@@ -455,13 +447,13 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
                   : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
               }`}
             >
-              {label}
+              {t.dashboard.periods[key]}
             </button>
           ))}
           {analyticsLoading && (
             <span className="flex items-center gap-1.5 text-xs text-slate-400">
               <Loader2 size={12} className="animate-spin" />
-              Оновлення…
+              {t.dashboard.updating}
             </span>
           )}
         </div>
@@ -469,12 +461,12 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
 
       {/* ── Owner dashboard ── */}
       {activeTab === "owner" && (
-        <OwnerDashboard data={analyticsData.ownerAnalytics} lang={lang} />
+        <OwnerDashboard data={analyticsData.ownerAnalytics} lang={lang} t={t} />
       )}
 
       {/* ── Marketer dashboard ── */}
       {activeTab === "marketer" && (
-        <MarketerDashboard data={analyticsData.marketerAnalytics} />
+        <MarketerDashboard data={analyticsData.marketerAnalytics} t={t} />
       )}
 
       {/* ── Calls tab (existing functionality) ── */}

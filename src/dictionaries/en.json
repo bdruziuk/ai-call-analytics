@@ -121,6 +121,118 @@
       "analyzing": "AI analysis",
       "completed": "Completed",
       "failed": "Failed"
+    },
+    "tabs": {
+      "calls": "📞 Calls",
+      "owner": "👔 Owner / Director",
+      "marketer": "📣 Marketer"
+    },
+    "periods": {
+      "all": "All time",
+      "month": "Month",
+      "week": "Week",
+      "3days": "3 days",
+      "today": "Today"
+    },
+    "updating": "Updating…",
+    "trendVs": "vs. last week",
+    "owner": {
+      "kpi": {
+        "lostRevenue": "Lost Revenue",
+        "lostRevenueDesc": "Estimated losses due to operator errors",
+        "conversionRate": "Invoice Conversion",
+        "conversionDesc": "Answered calls → orders",
+        "upsellRate": "Upsell Performance",
+        "upsellDesc": "Calls with additional product offer",
+        "criticalCalls": "Critical Errors",
+        "criticalDesc": "Conflicts, rudeness, long hold times",
+        "callsSuffix": " calls"
+      },
+      "status": {
+        "good": "Good",
+        "attention": "Needs attention",
+        "critical": "Critical"
+      },
+      "lostRevenueTitle": "📉 Lost revenue by day (₴)",
+      "chartTooltipLost": "Lost",
+      "operatorKpiTitle": "👥 Operator KPIs",
+      "operatorCols": {
+        "operator": "Operator",
+        "conversion": "Conversion",
+        "aht": "AHT",
+        "upsell": "Upsell",
+        "checksPerHour": "Orders/hr",
+        "wasteTime": "Idle Time",
+        "politeness": "Politeness",
+        "status": "Status"
+      },
+      "insightsTitle": "Operational insights",
+      "insight1Title": "Call without alternative",
+      "insight1Desc": "Operator did not offer a substitute when item was out of stock",
+      "insight1Loss": "₴2 940",
+      "insight2Title": "Out-of-stock order leaks",
+      "insight2Desc": "Losses due to missing item and no alternative offered",
+      "insight2Loss": "₴1 680",
+      "insight3Title": "Idle time ratio",
+      "insight3Desc": "Share of operator time spent on non-target / dead leads",
+      "insight4Title": "Emotional burnout",
+      "insight4Desc": "Monotone / robotic speech, low engagement on calls",
+      "estimatedLoss": "Est. loss:",
+      "criticalCallsTitle": "🚨 Critical calls — need attention",
+      "noCriticalCalls": "No critical calls — great!",
+      "criticalCols": {
+        "datetime": "Date / time",
+        "operator": "Operator",
+        "reason": "Reason",
+        "loss": "Est. loss"
+      },
+      "openCallMobile": "Open call →",
+      "openCallDesktop": "Call →"
+    },
+    "marketer": {
+      "kpi": {
+        "adCalls": "Ad Calls",
+        "adCallsDesc": "Current week",
+        "adCallsSuffix": " calls",
+        "junkLeadRate": "Junk Lead Rate",
+        "junkLeadDesc": "Junk / non-targeted calls",
+        "adConversion": "Ad Conversion",
+        "adConversionDesc": "Ad calls → orders",
+        "topRefusal": "Top refusal reason",
+        "topRefusalDesc": "Most common reason for lost deals"
+      },
+      "recommendation": {
+        "scale": "Scale up",
+        "check": "Check ads",
+        "disable": "Disable campaign",
+        "improve_landing": "Improve landing"
+      },
+      "junkReason": {
+        "wrong_intent": "Wrong intent",
+        "did_not_apply": "Did not apply",
+        "accidental": "Accidental call",
+        "non_target": "Non-target lead"
+      },
+      "trafficTitle": "📊 Traffic source performance",
+      "trafficCols": {
+        "source": "Source",
+        "campaign": "Campaign",
+        "calls": "Calls",
+        "orders": "Orders",
+        "conversion": "Conversion",
+        "junk": "Junk %",
+        "revenue": "Revenue ₴",
+        "recommendation": "Recommendation"
+      },
+      "junkLeadsTitle": "🗑 Junk leads",
+      "junkLeadsDesc": "of all ad calls are non-targeted or accidental",
+      "refusalTitle": "❌ Refusal reasons",
+      "demandTitle": "☁️ Demand cloud — what customers are looking for",
+      "promotionsTitle": "🎁 Promotions & new products",
+      "customerMentions": "Customers mention",
+      "operatorsPush": "Operators promote",
+      "operatorsUnderperform": "Operators promote the offer {gap}% less than customers ask about it",
+      "operatorsOverperform": "Operators are actively promoting the offer"
     }
   },
   "calls": {

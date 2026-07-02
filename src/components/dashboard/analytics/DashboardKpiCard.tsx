@@ -13,6 +13,7 @@ type Props = {
   value: string;
   description?: string;
   trend?: Trend;
+  trendVs?: string;
   accentColor?: "red" | "green" | "amber" | "brand";
   smallValue?: boolean;
 };
@@ -36,7 +37,7 @@ const ACCENT: Record<string, { icon: string; border: string }> = {
   brand: { icon: "bg-brand-100 text-brand-600", border: "border-brand-100" },
 };
 
-export function DashboardKpiCard({ icon, label, value, description, trend, accentColor = "brand", smallValue = false }: Props) {
+export function DashboardKpiCard({ icon, label, value, description, trend, trendVs = "vs. last week", accentColor = "brand", smallValue = false }: Props) {
   const ac = ACCENT[accentColor] ?? ACCENT.brand;
 
   return (
@@ -57,7 +58,7 @@ export function DashboardKpiCard({ icon, label, value, description, trend, accen
       {trend !== undefined && (
         <p className={`mt-2 text-xs font-semibold ${trendColor(trend.value, trend.invertPolarity)}`}>
           {trendArrow(trend.value, trend.invertPolarity)}{" "}
-          {Math.abs(trend.value)}{trend.suffix ?? "%"} vs. минулий тиждень
+          {Math.abs(trend.value)}{trend.suffix ?? "%"} {trendVs}
         </p>
       )}
     </div>

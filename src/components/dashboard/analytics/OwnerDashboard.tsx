@@ -11,6 +11,9 @@ import {
 } from "recharts";
 import { DashboardKpiCard } from "./DashboardKpiCard";
 import type { OwnerAnalytics, OperatorKpi } from "@/lib/analytics-types";
+import type ukDict from "@/dictionaries/uk.json";
+
+type Dictionary = typeof ukDict;
 
 /* ── Helpers ─────────────────────────────────────────────────────────────── */
 
@@ -20,11 +23,11 @@ function fmtAht(seconds: number) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-function StatusBadge({ status }: { status: OperatorKpi["status"] }) {
+function StatusBadge({ status, t }: { status: OperatorKpi["status"]; t: Dictionary["dashboard"]["owner"]["status"] }) {
   const map = {
-    good:      { label: "Добре",             cls: "bg-emerald-100 text-emerald-700" },
-    attention: { label: "Потребує уваги",    cls: "bg-amber-100 text-amber-700"    },
-    critical:  { label: "Критично",          cls: "bg-red-100 text-red-600 font-bold" },
+    good:      { label: t.good,      cls: "bg-emerald-100 text-emerald-700" },
+    attention: { label: t.attention, cls: "bg-amber-100 text-amber-700"    },
+    critical:  { label: t.critical,  cls: "bg-red-100 text-red-600 font-bold" },
   } as const;
   const { label, cls } = map[status];
   return (
@@ -47,10 +50,12 @@ function Section({ title, children, className = "" }: { title: string; children:
 
 /* ── Main component ──────────────────────────────────────────────────────── */
 
-type Props = { data: OwnerAnalytics; lang: string };
+type Props = { data: OwnerAnalytics; lang: string; t: Dictionary };
 
-export function OwnerDashboard({ data, lang }: Props) {
+export function OwnerDashboard({ data, lang, t }: Props) {
   const { kpi, lostRevenueByDay, operators, criticalCalls } = data;
+  const td = t.dashboard;
+  const to = td.owner;
 
   const BRAND = "#1C78AE";
 
@@ -61,40 +66,44 @@ export function OwnerDashboard({ data, lang }: Props) {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <DashboardKpiCard
           icon={<TrendingDown size={18} />}
-          label="Злитий прибуток"
+          label={to.kpi.lostRevenue}
           value={`₴${kpi.lostRevenue.toLocaleString()}`}
-          description="Оцінка втрат через помилки операторів"
+          description={to.kpi.lostRevenueDesc}
           trend={{ value: kpi.lostRevenueTrend, invertPolarity: true }}
+          trendVs={td.trendVs}
           accentColor="red"
         />
         <DashboardKpiCard
           icon={<ShoppingCart size={18} />}
-          label="Конверсія в чеки"
+          label={to.kpi.conversionRate}
           value={`${kpi.conversionRate}%`}
-          description="Відповілих дзвінків → замовлення"
+          description={to.kpi.conversionDesc}
           trend={{ value: kpi.conversionTrend }}
+          trendVs={td.trendVs}
           accentColor="green"
         />
         <DashboardKpiCard
           icon={<TrendingUp size={18} />}
-          label="Виконання апсейлу"
+          label={to.kpi.upsellRate}
           value={`${kpi.upsellRate}%`}
-          description="Дзвінків із пропозицією доп. товарів"
+          description={to.kpi.upsellDesc}
           trend={{ value: kpi.upsellTrend }}
+          trendVs={td.trendVs}
           accentColor="brand"
         />
         <DashboardKpiCard
           icon={<AlertTriangle size={18} />}
-          label="Критичні помилки"
+          label={to.kpi.criticalCalls}
           value={String(kpi.criticalCallsCount)}
-          description="Конфлікти, грубість, довге очікування"
-          trend={{ value: kpi.criticalCallsTrend, invertPolarity: true, suffix: " дзв." }}
+          description={to.kpi.criticalDesc}
+          trend={{ value: kpi.criticalCallsTrend, invertPolarity: true, suffix: to.kpi.callsSuffix }}
+          trendVs={td.trendVs}
           accentColor="amber"
         />
       </div>
 
       {/* ── Lost revenue chart ── */}
-      <Section title="📉 Злитий прибуток по днях (₴)">
+      <Section title={to.lostRevenueTitle}>
         <div className="px-4 py-4 md:px-6">
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={lostRevenueByDay} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
@@ -103,7 +112,7 @@ export function OwnerDashboard({ data, lang }: Props) {
               <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} />
               <Tooltip
                 contentStyle={{ borderRadius: 10, border: "1px solid #e2e8f0", fontSize: 12 }}
-                formatter={(v) => [`₴${Number(v).toLocaleString()}`, "Злито"]}
+                formatter={(v) => [`₴${Number(v).toLocaleString()}`, to.chartTooltipLost]}
               />
               <Bar dataKey="amount" fill="#ef4444" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -112,22 +121,22 @@ export function OwnerDashboard({ data, lang }: Props) {
       </Section>
 
       {/* ── Operator KPI table ── */}
-      <Section title="👥 KPI операторів">
+      <Section title={to.operatorKpiTitle}>
         {/* Mobile cards */}
         <div className="md:hidden divide-y divide-slate-100">
           {operators.map((op) => (
             <div key={op.id} className="px-4 py-4">
               <div className="mb-2 flex items-center justify-between">
                 <span className="font-semibold text-slate-900">{op.name}</span>
-                <StatusBadge status={op.status} />
+                <StatusBadge status={op.status} t={to.status} />
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
-                <span>Конверсія: <strong>{op.conversionRate}%</strong></span>
-                <span>AHT: <strong>{fmtAht(op.aht)}</strong></span>
-                <span>Апсейл: <strong>{op.upsellRate}%</strong></span>
-                <span>Чеки/год: <strong>{op.closedChecksPerHour}</strong></span>
-                <span>Холостий час: <strong>{op.wasteTimeRatio}%</strong></span>
-                <span>Ввічливість: <strong>{op.politenessScore}/10</strong></span>
+                <span>{to.operatorCols.conversion}: <strong>{op.conversionRate}%</strong></span>
+                <span>{to.operatorCols.aht}: <strong>{fmtAht(op.aht)}</strong></span>
+                <span>{to.operatorCols.upsell}: <strong>{op.upsellRate}%</strong></span>
+                <span>{to.operatorCols.checksPerHour}: <strong>{op.closedChecksPerHour}</strong></span>
+                <span>{to.operatorCols.wasteTime}: <strong>{op.wasteTimeRatio}%</strong></span>
+                <span>{to.operatorCols.politeness}: <strong>{op.politenessScore}/10</strong></span>
               </div>
             </div>
           ))}
@@ -138,7 +147,7 @@ export function OwnerDashboard({ data, lang }: Props) {
           <table className="w-full text-sm">
             <thead className="bg-slate-50/70 border-b border-slate-100 text-xs text-slate-500 uppercase tracking-wide">
               <tr>
-                {["Оператор", "Конверсія", "AHT", "Апсейл", "Чеки/год", "Холостий час", "Ввічливість", "Статус"].map((h) => (
+                {[to.operatorCols.operator, to.operatorCols.conversion, to.operatorCols.aht, to.operatorCols.upsell, to.operatorCols.checksPerHour, to.operatorCols.wasteTime, to.operatorCols.politeness, to.operatorCols.status].map((h) => (
                   <th key={h} className="px-4 py-2.5 text-left font-semibold">{h}</th>
                 ))}
               </tr>
@@ -175,7 +184,7 @@ export function OwnerDashboard({ data, lang }: Props) {
                       <span className="text-xs font-semibold text-slate-700">{op.politenessScore}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3"><StatusBadge status={op.status} /></td>
+                  <td className="px-4 py-3"><StatusBadge status={op.status} t={to.status} /></td>
                 </tr>
               ))}
             </tbody>
@@ -185,39 +194,39 @@ export function OwnerDashboard({ data, lang }: Props) {
 
       {/* ── Operational insight cards ── */}
       <div>
-        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">Операційні інсайти</h2>
+        <h2 className="mb-3 text-sm font-bold uppercase tracking-wide text-slate-500">{to.insightsTitle}</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {[
             {
               Icon: PhoneOff,
               color: "bg-red-100 text-red-600",
-              title: "Дзвінок без альтернативи",
+              title: to.insight1Title,
               value: "14",
-              desc: "Оператор не запропонував заміну коли товар закінчився",
-              loss: "₴2 940",
+              desc: to.insight1Desc,
+              loss: to.insight1Loss,
             },
             {
               Icon: Package,
               color: "bg-orange-100 text-orange-600",
-              title: "Витік замовлень через відсутність товару",
+              title: to.insight2Title,
               value: "8",
-              desc: "Втрати через відсутність позиції та ненадання альтернативи",
-              loss: "₴1 680",
+              desc: to.insight2Desc,
+              loss: to.insight2Loss,
             },
             {
               Icon: Zap,
               color: "bg-amber-100 text-amber-700",
-              title: "Частка холостого часу",
+              title: to.insight3Title,
               value: "22%",
-              desc: "Частка часу операторів витрачена на нецільові / мертві ліди",
+              desc: to.insight3Desc,
               loss: undefined,
             },
             {
               Icon: Brain,
               color: "bg-purple-100 text-purple-600",
-              title: "Емоційне вигорання",
-              value: "2 опер.",
-              desc: "Монотонна / роботизована мова, низька залученість у дзвінку",
+              title: to.insight4Title,
+              value: "2",
+              desc: to.insight4Desc,
               loss: undefined,
             },
           ].map(({ Icon, color, title, value, desc, loss }) => (
@@ -231,7 +240,7 @@ export function OwnerDashboard({ data, lang }: Props) {
               <p className="mb-1 text-sm font-semibold text-slate-800">{title}</p>
               <p className="text-xs text-slate-500 leading-relaxed">{desc}</p>
               {loss && (
-                <p className="mt-2 text-xs font-bold text-red-500">Оцін. збиток: {loss}</p>
+                <p className="mt-2 text-xs font-bold text-red-500">{to.estimatedLoss} {loss}</p>
               )}
             </div>
           ))}
@@ -239,9 +248,9 @@ export function OwnerDashboard({ data, lang }: Props) {
       </div>
 
       {/* ── Critical calls list ── */}
-      <Section title="🚨 Критичні дзвінки — потребують уваги">
+      <Section title={to.criticalCallsTitle}>
         {criticalCalls.length === 0 ? (
-          <p className="px-5 py-8 text-center text-sm text-slate-400">Критичних дзвінків немає — відмінно!</p>
+          <p className="px-5 py-8 text-center text-sm text-slate-400">{to.noCriticalCalls}</p>
         ) : (
           <>
             {/* Mobile */}
@@ -258,7 +267,7 @@ export function OwnerDashboard({ data, lang }: Props) {
                   </div>
                   {c.callId && (
                     <Link href={`/${lang}/calls/${c.callId}`} className="mt-1.5 inline-block text-xs font-medium text-brand-600 hover:underline">
-                      Відкрити дзвінок →
+                      {to.openCallMobile}
                     </Link>
                   )}
                 </div>
@@ -270,7 +279,7 @@ export function OwnerDashboard({ data, lang }: Props) {
               <table className="w-full text-sm">
                 <thead className="bg-slate-50/70 border-b border-slate-100 text-xs uppercase tracking-wide text-slate-500">
                   <tr>
-                    {["Дата / час", "Оператор", "Причина", "Оцін. збиток", ""].map((h) => (
+                    {[to.criticalCols.datetime, to.criticalCols.operator, to.criticalCols.reason, to.criticalCols.loss, ""].map((h) => (
                       <th key={h} className="px-4 py-2.5 text-left font-semibold">{h}</th>
                     ))}
                   </tr>
@@ -289,7 +298,7 @@ export function OwnerDashboard({ data, lang }: Props) {
                       <td className="px-4 py-3 text-right">
                         {c.callId ? (
                           <Link href={`/${lang}/calls/${c.callId}`} className="text-xs font-medium text-brand-600 hover:underline">
-                            Дзвінок →
+                            {to.openCallDesktop}
                           </Link>
                         ) : (
                           <span className="text-xs text-slate-300">—</span>

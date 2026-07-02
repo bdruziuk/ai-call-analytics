@@ -121,6 +121,118 @@
       "analyzing": "AI-анализ",
       "completed": "Готово",
       "failed": "Ошибка"
+    },
+    "tabs": {
+      "calls": "📞 Звонки",
+      "owner": "👔 Владелец / Директор",
+      "marketer": "📣 Маркетолог"
+    },
+    "periods": {
+      "all": "Всё время",
+      "month": "Месяц",
+      "week": "Неделя",
+      "3days": "3 дня",
+      "today": "Сегодня"
+    },
+    "updating": "Обновление…",
+    "trendVs": "vs. прошлая неделя",
+    "owner": {
+      "kpi": {
+        "lostRevenue": "Упущенная прибыль",
+        "lostRevenueDesc": "Оценка потерь из-за ошибок операторов",
+        "conversionRate": "Конверсия в чеки",
+        "conversionDesc": "Принятые звонки → заказы",
+        "upsellRate": "Выполнение апсейла",
+        "upsellDesc": "Звонков с предложением доп. товаров",
+        "criticalCalls": "Критические ошибки",
+        "criticalDesc": "Конфликты, грубость, долгое ожидание",
+        "callsSuffix": " зв."
+      },
+      "status": {
+        "good": "Хорошо",
+        "attention": "Требует внимания",
+        "critical": "Критично"
+      },
+      "lostRevenueTitle": "📉 Упущенная прибыль по дням (₴)",
+      "chartTooltipLost": "Потеряно",
+      "operatorKpiTitle": "👥 KPI операторов",
+      "operatorCols": {
+        "operator": "Оператор",
+        "conversion": "Конверсия",
+        "aht": "AHT",
+        "upsell": "Апсейл",
+        "checksPerHour": "Чеки/час",
+        "wasteTime": "Холостое время",
+        "politeness": "Вежливость",
+        "status": "Статус"
+      },
+      "insightsTitle": "Операционные инсайты",
+      "insight1Title": "Звонок без альтернативы",
+      "insight1Desc": "Оператор не предложил замену когда товар закончился",
+      "insight1Loss": "₴2 940",
+      "insight2Title": "Утечка заказов из-за отсутствия товара",
+      "insight2Desc": "Потери из-за отсутствия позиции и непредоставления альтернативы",
+      "insight2Loss": "₴1 680",
+      "insight3Title": "Доля холостого времени",
+      "insight3Desc": "Доля времени операторов, потраченного на нецелевые / мёртвые лиды",
+      "insight4Title": "Эмоциональное выгорание",
+      "insight4Desc": "Монотонная / роботизированная речь, низкая вовлечённость в звонке",
+      "estimatedLoss": "Оцен. убыток:",
+      "criticalCallsTitle": "🚨 Критические звонки — требуют внимания",
+      "noCriticalCalls": "Критических звонков нет — отлично!",
+      "criticalCols": {
+        "datetime": "Дата / время",
+        "operator": "Оператор",
+        "reason": "Причина",
+        "loss": "Оцен. убыток"
+      },
+      "openCallMobile": "Открыть звонок →",
+      "openCallDesktop": "Звонок →"
+    },
+    "marketer": {
+      "kpi": {
+        "adCalls": "Звонки с рекламы",
+        "adCallsDesc": "За текущую неделю",
+        "adCallsSuffix": " зв.",
+        "junkLeadRate": "Доля мусорных лидов",
+        "junkLeadDesc": "Мусорные / нецелевые звонки",
+        "adConversion": "Конверсия рекламы",
+        "adConversionDesc": "Рекламные звонки → заказы",
+        "topRefusal": "Топ причина отказа",
+        "topRefusalDesc": "Частейшая причина незакрытой сделки"
+      },
+      "recommendation": {
+        "scale": "Масштабировать",
+        "check": "Проверить объявл.",
+        "disable": "Отключить кампанию",
+        "improve_landing": "Улучшить посадочную"
+      },
+      "junkReason": {
+        "wrong_intent": "Ошибочная заявка",
+        "did_not_apply": "Не оставлял заявку",
+        "accidental": "Случайный звонок",
+        "non_target": "Нецелевой клиент"
+      },
+      "trafficTitle": "📊 Эффективность источников трафика",
+      "trafficCols": {
+        "source": "Источник",
+        "campaign": "Кампания",
+        "calls": "Звонки",
+        "orders": "Заказы",
+        "conversion": "Конверсия",
+        "junk": "Мусорные %",
+        "revenue": "Доход ₴",
+        "recommendation": "Рекомендация"
+      },
+      "junkLeadsTitle": "🗑 Мусорные лиды",
+      "junkLeadsDesc": "от всех рекламных звонков являются нецелевыми или случайными",
+      "refusalTitle": "❌ Причины отказов",
+      "demandTitle": "☁️ Облако запросов — что ищут клиенты",
+      "promotionsTitle": "🎁 Акции и новинки",
+      "customerMentions": "Клиенты упоминают",
+      "operatorsPush": "Операторы продвигают",
+      "operatorsUnderperform": "Операторы продвигают акцию на {gap}% реже, чем клиенты о ней спрашивают",
+      "operatorsOverperform": "Операторы активно продвигают акцию"
     }
   },
   "calls": {
