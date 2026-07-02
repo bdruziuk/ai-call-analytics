@@ -59,8 +59,7 @@ async function fetchRailwayCosts(): Promise<CostResult> {
   const query = `
     query GetProject($id: String!) {
       project(id: $id) {
-        name
-        estimatedCost: estimatedUsage { estimatedCost }
+        estimatedUsage { estimatedCost }
       }
     }
   `;
@@ -75,7 +74,7 @@ async function fetchRailwayCosts(): Promise<CostResult> {
     if (!res.ok) return { totalUsd: null, periodLabel: "", error: `Railway HTTP ${res.status}` };
 
     const json = await res.json() as {
-      data?: { project?: { name?: string; estimatedCost?: { estimatedCost?: number } } };
+      data?: { project?: { estimatedUsage?: { estimatedCost?: number } } };
       errors?: { message: string }[];
     };
 
@@ -83,7 +82,7 @@ async function fetchRailwayCosts(): Promise<CostResult> {
       return { totalUsd: null, periodLabel: "", error: json.errors[0].message };
     }
 
-    const cost = json.data?.project?.estimatedCost?.estimatedCost ?? null;
+    const cost = json.data?.project?.estimatedUsage?.estimatedCost ?? null;
     const now  = new Date();
     const label = new Date(now.getFullYear(), now.getMonth(), 1)
       .toLocaleDateString("uk", { month: "long", year: "numeric" });
