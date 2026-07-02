@@ -200,6 +200,7 @@ export default async function AnalyticsPage({ params, searchParams }: Props) {
       data={analyticsData}
       periodFrom={from}
       periodTo={to}
+      viewAs={viewAs}
     />
   );
 }
