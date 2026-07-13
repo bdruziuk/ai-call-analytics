@@ -7,14 +7,18 @@ import {
   CheckCircle2, ChevronDown, ArrowRight, Shield,
   Target, Sparkles, DollarSign, Star, MapPin,
 } from "lucide-react";
-import type ukDict from "@/dictionaries/uk.json";
+import type { NicheLanding } from "@/content/niches/types";
 
-type L = typeof ukDict["landing"];
+type L = NicheLanding;
 
 /* ── Design tokens ─────────────────────────────────────────────────────── */
 const BLUE      = "#1C78AE"; // brand-600
 const BLUE_DARK = "#104A6D"; // brand-800
 const DARK = "#0F172A";
+
+const DEFAULT_INTEGRATIONS = [
+  "Binotel", "Ringostat", "KeyCRM", "Kyivstar PBX", "VoIPTime", "Poster POS", "iiko", "Aircall", "Twilio",
+];
 
 /* ══════════════════════════════════════════════════════════════════════════
    DASHBOARD MOCKUP
@@ -117,7 +121,7 @@ function FAQItem({ q, a }: { q: string; a: string }) {
 /* ══════════════════════════════════════════════════════════════════════════
    LEAD CAPTURE FORM
    ══════════════════════════════════════════════════════════════════════════ */
-function LeadForm({ l }: { l: L }) {
+function LeadForm({ l, source }: { l: L; source: string }) {
   const [form, setForm] = useState({ name: "", restaurant: "", phone: "", email: "" });
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
 
@@ -128,7 +132,7 @@ function LeadForm({ l }: { l: L }) {
       const res = await fetch("/api/leads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, source }),
       });
       setStatus(res.ok ? "success" : "error");
     } catch {
@@ -189,10 +193,19 @@ function LeadForm({ l }: { l: L }) {
 /* ══════════════════════════════════════════════════════════════════════════
    MAIN COMPONENT
    ══════════════════════════════════════════════════════════════════════════ */
-type Props = { lang: string; isLoggedIn: boolean; t: typeof ukDict };
+type Props = {
+  lang: string;
+  isLoggedIn: boolean;
+  content: NicheLanding;
+  /** URL slug of this niche — tags lead submissions so admins know where they came from */
+  source: string;
+  /** Overrides the default telephony/CRM/POS/PMS integration badges shown in section 8 */
+  integrations?: string[];
+};
 
-export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
-  const l = t.landing;
+export function NicheLandingPage({ lang, isLoggedIn, content, source, integrations }: Props) {
+  const l = content;
+  const integrationList = integrations && integrations.length > 0 ? integrations : DEFAULT_INTEGRATIONS;
 
   const problems = [
     { Icon: Clock,      iconCls: "bg-amber-100 text-amber-600",  title: l.p1title, impact: l.p1impact, stat: l.p1stat },
@@ -466,7 +479,7 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
           <p className="mx-auto mb-12 max-w-lg text-center text-slate-500">{l.s6sub}</p>
 
           <div className="mb-12 flex flex-wrap items-center justify-center gap-3">
-            {["Binotel","Ringostat","KeyCRM","Kyivstar PBX","VoIPTime","Poster POS","iiko","Aircall","Twilio"].map((name) => (
+            {integrationList.map((name) => (
               <div key={name} className="rounded-xl border border-slate-200 bg-slate-50 px-5 py-3 text-sm font-semibold text-slate-600 shadow-sm">{name}</div>
             ))}
           </div>
@@ -565,7 +578,7 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
                 ))}
               </div>
               <blockquote className="mb-4 text-base italic leading-relaxed text-slate-700">
-                "{l.testimonialText}"
+                &ldquo;{l.testimonialText}&rdquo;
               </blockquote>
               <div>
                 <p className="font-semibold text-slate-900">{l.testimonialName}</p>
@@ -611,7 +624,7 @@ export function RestaurantLandingPage({ lang, isLoggedIn, t }: Props) {
           <h2 className="mb-4 text-center text-3xl font-extrabold tracking-tight text-white md:text-4xl">{l.s10title}</h2>
           <p className="mx-auto mb-10 max-w-md text-center text-slate-400">{l.s10sub}</p>
 
-          <LeadForm l={l} />
+          <LeadForm l={l} source={source} />
 
           {!isLoggedIn && (
             <p className="mt-8 text-center text-sm text-slate-500">

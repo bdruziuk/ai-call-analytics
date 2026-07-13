@@ -5,8 +5,22 @@ import { notFound } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { db } from "@/lib/db";
-import { Mic2, BarChart2, Users, Upload, Sparkles, TrendingUp, ArrowRight } from "lucide-react";
+import {
+  Mic2, BarChart2, Users, Upload, Sparkles, TrendingUp, ArrowRight,
+  UtensilsCrossed, Coffee, Beer, Pizza, Hotel, Bike, ChefHat,
+} from "lucide-react";
 import { PricingSection } from "@/components/home/PricingSection";
+import { niches } from "@/content/niches/registry";
+
+const SOLUTION_ICONS: Record<string, React.ReactNode> = {
+  restaurant: <UtensilsCrossed size={22} className="text-white" />,
+  cafe: <Coffee size={22} className="text-white" />,
+  bar: <Beer size={22} className="text-white" />,
+  pizzeria: <Pizza size={22} className="text-white" />,
+  hotel: <Hotel size={22} className="text-white" />,
+  "food-delivery": <Bike size={22} className="text-white" />,
+  "dark-kitchen": <ChefHat size={22} className="text-white" />,
+};
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -20,6 +34,15 @@ export default async function HomePage({ params }: Props) {
   ]);
 
   const isLoggedIn = !!session?.user;
+
+  const solutionsItems = [
+    { href: `/${lang}/restaurant`, label: t.nav.restaurant, icon: SOLUTION_ICONS.restaurant },
+    ...niches.map((n) => ({
+      href: `/${lang}/${n.slug}`,
+      label: n.meta[lang].name,
+      icon: SOLUTION_ICONS[n.slug],
+    })),
+  ];
 
   // Fetch current plan for logged-in users (for pricing CTA state)
   let currentPlanId: string | undefined;
@@ -176,6 +199,37 @@ export default async function HomePage({ params }: Props) {
                   <p className="text-sm leading-relaxed text-slate-500">{desc}</p>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Industry solutions ───────────────────────────────────────────────── */}
+      <section className="bg-slate-50 py-20">
+        <div className="mx-auto max-w-5xl px-6">
+          <h2 className="mb-3 text-center text-3xl font-extrabold tracking-tight text-[#06142E]">
+            {t.home.solutionsTitle}
+          </h2>
+          <p className="mx-auto mb-12 max-w-xl text-center text-slate-500">
+            {t.home.solutionsSubtitle}
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {solutionsItems.map(({ href, label, icon }) => (
+              <Link
+                key={href}
+                href={href}
+                className="group flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 transition hover:shadow-md hover:ring-brand-200"
+              >
+                <div
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition group-hover:scale-105"
+                  style={{ background: "#1C78AE" }}
+                >
+                  {icon}
+                </div>
+                <span className="font-semibold text-[#06142E]">{label}</span>
+                <ArrowRight size={16} className="ml-auto shrink-0 text-slate-300 transition group-hover:translate-x-0.5 group-hover:text-brand-500" />
+              </Link>
             ))}
           </div>
         </div>

@@ -3,7 +3,7 @@ import nodemailer from "nodemailer";
 
 export async function POST(request: Request) {
   try {
-    const { name, restaurant, phone, email } = await request.json();
+    const { name, restaurant, phone, email, source } = await request.json();
 
     if (!name || !email) {
       return NextResponse.json({ error: "MISSING_FIELDS" }, { status: 400 });
@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const to = adminEmails.split(",").map((e) => e.trim()).filter(Boolean).join(", ");
 
     const body = `
-Новий лід з лендингу ресторану:
+Новий лід з лендингу${source ? ` (${source})` : ""}:
 
 Ім'я:          ${name}
 Заклад:        ${restaurant || "—"}
