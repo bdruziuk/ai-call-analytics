@@ -3,12 +3,27 @@ import { hasLocale, locales, getDictionary } from "@/lib/dictionaries";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { Logo } from "@/components/Logo";
 import { MobileNav } from "@/components/MobileNav";
+import { SolutionsMenu } from "@/components/SolutionsMenu";
 import { ProfileAvatar } from "@/components/ProfileAvatar";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { notFound } from "next/navigation";
-import { LayoutDashboard, PhoneCall, Users, Shield, Code2, BarChart2 } from "lucide-react";
+import {
+  LayoutDashboard, PhoneCall, Users, Shield, Code2, BarChart2,
+  UtensilsCrossed, Coffee, Beer, Pizza, Hotel, Bike, ChefHat,
+} from "lucide-react";
 import { db } from "@/lib/db";
+import { niches } from "@/content/niches/registry";
+
+const NICHE_ICON_SIZE = 16;
+const NICHE_ICONS: Record<string, React.ReactNode> = {
+  cafe: <Coffee size={NICHE_ICON_SIZE} />,
+  bar: <Beer size={NICHE_ICON_SIZE} />,
+  pizzeria: <Pizza size={NICHE_ICON_SIZE} />,
+  hotel: <Hotel size={NICHE_ICON_SIZE} />,
+  "food-delivery": <Bike size={NICHE_ICON_SIZE} />,
+  "dark-kitchen": <ChefHat size={NICHE_ICON_SIZE} />,
+};
 
 type Props = {
   children: React.ReactNode;
@@ -48,6 +63,15 @@ export default async function LangLayout({ children, params }: Props) {
       .map((e) => e.trim().toLowerCase())
       .includes((session.user.email ?? "").toLowerCase());
 
+  const solutionsItems = [
+    { href: `/${lang}/restaurant`, label: t.nav.restaurant, icon: <UtensilsCrossed size={NICHE_ICON_SIZE} /> },
+    ...niches.map((n) => ({
+      href: `/${lang}/${n.slug}`,
+      label: n.meta[lang].name,
+      icon: NICHE_ICONS[n.slug],
+    })),
+  ];
+
   const navItems = session?.user
     ? [
         { href: `/${lang}/dashboard`, label: t.nav.dashboard, icon: <LayoutDashboard size={18} /> },
@@ -67,6 +91,11 @@ export default async function LangLayout({ children, params }: Props) {
         {/* Left: logo + desktop nav */}
         <div className="flex items-center gap-6">
           <Logo lang={lang} size="sm" />
+
+          {/* Niche landing pages — always visible */}
+          <div className="hidden md:block">
+            <SolutionsMenu label={t.nav.solutions} items={solutionsItems} />
+          </div>
 
           {session?.user && (
             <nav className="hidden md:flex items-center gap-1">
@@ -109,7 +138,7 @@ export default async function LangLayout({ children, params }: Props) {
 
               {/* Mobile hamburger (hidden on md+) */}
               <div className="md:hidden">
-                <MobileNav items={navItems} />
+                <MobileNav items={[...solutionsItems, ...navItems]} />
               </div>
             </>
           ) : (
@@ -126,6 +155,10 @@ export default async function LangLayout({ children, params }: Props) {
               >
                 {t.auth.register}
               </Link>
+              {/* Mobile: niche links for logged-out users */}
+              <div className="md:hidden">
+                <MobileNav items={solutionsItems} />
+              </div>
             </div>
           )}
         </div>

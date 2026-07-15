@@ -5,7 +5,8 @@
     "managers": "Менеджеры",
     "apiDocs": "API",
     "analytics": "Аналитика",
-    "restaurant": "Для ресторанов"
+    "restaurant": "Рестораны",
+    "solutions": "Решения"
   },
   "home": {
     "title": "AI Call Analytics",
