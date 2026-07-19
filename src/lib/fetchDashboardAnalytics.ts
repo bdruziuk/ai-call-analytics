@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
-import type { OwnerAnalytics, MarketerAnalytics, OperatorKpi, CriticalCall, TopProduct } from "./analytics-types";
+import type { OwnerAnalytics, MarketerAnalytics, OperatorKpi, CriticalCall } from "./analytics-types";
+import { normalizeTopProducts } from "./normalizeTopProducts";
 
 function toArr(v: unknown): string[] {
   if (Array.isArray(v)) return v.map(String);
@@ -124,15 +125,7 @@ export async function fetchOwnerAnalytics(userId: string, since: Date | null = n
     p.total++;
     if (c.saleStatus === "sold") p.sold++;
   }
-  const topProducts: TopProduct[] = [...productMap.entries()]
-    .map(([product, { total, sold }]) => ({
-      product,
-      callCount: total,
-      soldCount: sold,
-      conversionRate: pct(sold, total),
-    }))
-    .sort((a, b) => b.callCount - a.callCount)
-    .slice(0, 8);
+  const topProducts = await normalizeTopProducts(productMap, 8);
 
   // ── Critical calls ──────────────────────────────────────────────────────
   const criticalCalls: CriticalCall[] = critical.slice(0, 10).map((c) => {
