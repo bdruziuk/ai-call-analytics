@@ -766,7 +766,10 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
               {sortedCalls.map((call) => (
                 <tr key={call.id} className="hover:bg-slate-50 transition-colors align-middle">
                   <td className="px-4 py-3 text-sm text-slate-600 whitespace-nowrap">
-                    {new Date(call.createdAt).toLocaleDateString(t.dateLocale)}
+                    <p className="text-xs text-slate-400">
+                      {new Date(call.createdAt).toLocaleTimeString(t.dateLocale, { hour: "2-digit", minute: "2-digit" })}
+                    </p>
+                    <p>{new Date(call.createdAt).toLocaleDateString(t.dateLocale)}</p>
                   </td>
                   <td className="px-4 py-3 text-sm font-medium text-slate-800 max-w-[180px]">
                     <p className="truncate">{call.fileName}</p>
