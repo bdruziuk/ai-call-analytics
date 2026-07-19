@@ -176,6 +176,14 @@
         "politeness": "Politeness",
         "status": "Status"
       },
+      "topProductsTitle": "🏆 Top products by calls",
+      "noProducts": "AI hasn't identified any products in calls for this period yet.",
+      "topProductsCols": {
+        "product": "Product",
+        "calls": "Calls",
+        "sold": "Sold",
+        "conversion": "Conversion"
+      },
       "insightsTitle": "Operational insights",
       "insight1Title": "Call without alternative",
       "insight1Desc": "Operator did not offer a substitute when item was out of stock",

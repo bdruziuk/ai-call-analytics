@@ -55,11 +55,19 @@ export type CriticalCall = {
   callId?: string;
 };
 
+export type TopProduct = {
+  product: string;
+  callCount: number;
+  soldCount: number;
+  conversionRate: number; // 0-100 %
+};
+
 export type OwnerAnalytics = {
   kpi: OwnerKpi;
   lostRevenueByDay: LostRevenueByDay[];
   operators: OperatorKpi[];
   criticalCalls: CriticalCall[];
+  topProducts: TopProduct[];
 };
 
 /* ── Marketer KPIs ──────────────────────────────────────────────────────── */

@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import type { OwnerAnalytics, MarketerAnalytics, OperatorKpi, CriticalCall } from "./analytics-types";
+import type { OwnerAnalytics, MarketerAnalytics, OperatorKpi, CriticalCall, TopProduct } from "./analytics-types";
 
 function toArr(v: unknown): string[] {
   if (Array.isArray(v)) return v.map(String);
@@ -31,7 +31,7 @@ export async function fetchOwnerAnalytics(userId: string, since: Date | null = n
       select: {
         id: true, score: true, saleStatus: true, issues: true,
         managerMistakes: true, objections: true, durationSeconds: true,
-        salesProfileId: true, createdAt: true, fileName: true,
+        salesProfileId: true, createdAt: true, fileName: true, product: true,
       },
     }),
     db.call.findMany({
@@ -114,6 +114,26 @@ export async function fetchOwnerAnalytics(userId: string, since: Date | null = n
     };
   }).sort((a, b) => b.conversionRate - a.conversionRate);
 
+  // ── Top products (mentioned in calls) ───────────────────────────────────
+  const productMap = new Map<string, { total: number; sold: number }>();
+  for (const c of realCalls) {
+    const product = c.product?.trim();
+    if (!product) continue;
+    if (!productMap.has(product)) productMap.set(product, { total: 0, sold: 0 });
+    const p = productMap.get(product)!;
+    p.total++;
+    if (c.saleStatus === "sold") p.sold++;
+  }
+  const topProducts: TopProduct[] = [...productMap.entries()]
+    .map(([product, { total, sold }]) => ({
+      product,
+      callCount: total,
+      soldCount: sold,
+      conversionRate: pct(sold, total),
+    }))
+    .sort((a, b) => b.callCount - a.callCount)
+    .slice(0, 8);
+
   // ── Critical calls ──────────────────────────────────────────────────────
   const criticalCalls: CriticalCall[] = critical.slice(0, 10).map((c) => {
     const issues = toArr(c.issues);
@@ -142,6 +162,7 @@ export async function fetchOwnerAnalytics(userId: string, since: Date | null = n
     lostRevenueByDay,
     operators,
     criticalCalls,
+    topProducts,
   };
 }
 

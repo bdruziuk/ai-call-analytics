@@ -3,7 +3,7 @@
 import Link from "next/link";
 import {
   TrendingDown, TrendingUp, AlertTriangle, ShoppingCart,
-  Clock, Zap, Users, PhoneOff, Package, Brain,
+  Clock, Zap, Users, PhoneOff, Package, Brain, Trophy,
 } from "lucide-react";
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis,
@@ -53,7 +53,7 @@ function Section({ title, children, className = "" }: { title: string; children:
 type Props = { data: OwnerAnalytics; lang: string; t: Dictionary };
 
 export function OwnerDashboard({ data, lang, t }: Props) {
-  const { kpi, lostRevenueByDay, operators, criticalCalls } = data;
+  const { kpi, lostRevenueByDay, operators, criticalCalls, topProducts } = data;
   const td = t.dashboard;
   const to = td.owner;
 
@@ -190,6 +190,68 @@ export function OwnerDashboard({ data, lang, t }: Props) {
             </tbody>
           </table>
         </div>
+      </Section>
+
+      {/* ── Top products (from call analytics) ── */}
+      <Section title={to.topProductsTitle}>
+        {topProducts.length === 0 ? (
+          <p className="px-5 py-8 text-center text-sm text-slate-400">{to.noProducts}</p>
+        ) : (
+          <>
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-slate-100">
+              {topProducts.map((p, i) => (
+                <div key={p.product} className="px-4 py-4">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="shrink-0 text-xs font-bold text-slate-400">#{i + 1}</span>
+                      <span className="truncate font-semibold text-slate-900">{p.product}</span>
+                    </span>
+                    <span className="shrink-0 flex items-center gap-1.5">
+                      <Trophy size={14} className="text-amber-500" />
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-x-4 gap-y-1 text-xs text-slate-600">
+                    <span>{to.topProductsCols.calls}: <strong>{p.callCount}</strong></span>
+                    <span>{to.topProductsCols.sold}: <strong>{p.soldCount}</strong></span>
+                    <span>{to.topProductsCols.conversion}: <strong>{p.conversionRate}%</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50/70 border-b border-slate-100 text-xs text-slate-500 uppercase tracking-wide">
+                  <tr>
+                    <th className="px-4 py-2.5 text-left font-semibold">#</th>
+                    {[to.topProductsCols.product, to.topProductsCols.calls, to.topProductsCols.sold, to.topProductsCols.conversion].map((h) => (
+                      <th key={h} className="px-4 py-2.5 text-left font-semibold">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {topProducts.map((p, i) => (
+                    <tr key={p.product} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="px-4 py-3 text-xs font-bold text-slate-400">
+                        {i === 0 ? <Trophy size={16} className="text-amber-500" /> : `#${i + 1}`}
+                      </td>
+                      <td className="px-4 py-3 font-semibold text-slate-800">{p.product}</td>
+                      <td className="px-4 py-3 text-slate-600">{p.callCount}</td>
+                      <td className="px-4 py-3 text-slate-600">{p.soldCount}</td>
+                      <td className="px-4 py-3">
+                        <span className={p.conversionRate >= 65 ? "text-emerald-600 font-semibold" : p.conversionRate >= 50 ? "text-amber-600" : "text-red-500 font-semibold"}>
+                          {p.conversionRate}%
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </Section>
 
       {/* ── Operational insight cards ── */}
