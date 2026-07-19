@@ -190,18 +190,22 @@ export async function fetchMarketerAnalytics(userId: string, since: Date | null 
   const prevJunkRate = pct(prevJunk, prevTotal);
 
   // ── Refusal reasons from objections ────────────────────────────────────
-  const objectionFreq = new Map<string, number>();
+  const objectionData = new Map<string, { count: number; callIds: string[] }>();
   for (const c of currentCalls) {
     for (const o of toArr(c.objections)) {
       const key = o.trim();
-      if (key) objectionFreq.set(key, (objectionFreq.get(key) ?? 0) + 1);
+      if (!key) continue;
+      if (!objectionData.has(key)) objectionData.set(key, { count: 0, callIds: [] });
+      const entry = objectionData.get(key)!;
+      entry.count++;
+      if (entry.callIds.length < 5) entry.callIds.push(c.id);
     }
   }
-  const totalObjections = [...objectionFreq.values()].reduce((a, b) => a + b, 0);
-  const refusalReasons = [...objectionFreq.entries()]
-    .sort(([, a], [, b]) => b - a)
+  const totalObjections = [...objectionData.values()].reduce((a, b) => a + b.count, 0);
+  const refusalReasons = [...objectionData.entries()]
+    .sort(([, a], [, b]) => b.count - a.count)
     .slice(0, 8)
-    .map(([reason, count]) => ({ reason, count, percentage: pct(count, totalObjections) }));
+    .map(([reason, { count, callIds }]) => ({ reason, count, percentage: pct(count, totalObjections), callIds }));
 
   const topRefusalReason = refusalReasons[0]?.reason ?? "—";
 

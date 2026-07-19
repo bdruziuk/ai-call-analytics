@@ -472,7 +472,7 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
 
       {/* ── Marketer dashboard ── */}
       {activeTab === "marketer" && (
-        <MarketerDashboard data={analyticsData.marketerAnalytics} t={t} />
+        <MarketerDashboard data={analyticsData.marketerAnalytics} lang={lang} t={t} />
       )}
 
       {/* ── Calls tab (existing functionality) ── */}

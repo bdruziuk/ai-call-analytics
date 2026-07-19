@@ -98,6 +98,8 @@ export type RefusalReason = {
   reason: string;
   count: number;
   percentage: number;
+  /** ids of a few example Call records with this objection — link to /calls/:id */
+  callIds: string[];
 };
 
 export type JunkLead = {

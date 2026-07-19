@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Phone, Trash2, TrendingUp, AlertCircle, AlertTriangle,
   CheckCircle2, XCircle, MinusCircle, ExternalLink,
@@ -45,9 +46,9 @@ function Section({ title, children, className = "" }: { title: string; children:
 
 /* ── Main component ──────────────────────────────────────────────────────── */
 
-type Props = { data: MarketerAnalytics; t: Dictionary };
+type Props = { data: MarketerAnalytics; lang: string; t: Dictionary };
 
-export function MarketerDashboard({ data, t }: Props) {
+export function MarketerDashboard({ data, lang, t }: Props) {
   const { kpi, trafficSources, junkLeads, refusalReasons, demandTags, promotionInsights } = data;
   const td = t.dashboard;
   const tm = td.marketer;
@@ -189,9 +190,25 @@ export function MarketerDashboard({ data, t }: Props) {
           <div className="px-5 py-4 space-y-3">
             {refusalReasons.map((r) => (
               <div key={r.reason}>
-                <div className="mb-1 flex justify-between text-xs">
+                <div className="mb-1 flex items-center justify-between gap-3 text-xs">
                   <span className="text-slate-700">{r.reason}</span>
-                  <span className="font-semibold text-slate-900">{r.count} · {r.percentage}%</span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    <span className="font-semibold text-slate-900">{r.count} · {r.percentage}%</span>
+                    {r.callIds.length > 0 && (
+                      <span className="flex items-center gap-1">
+                        {r.callIds.map((id, i) => (
+                          <Link
+                            key={id}
+                            href={`/${lang}/calls/${id}`}
+                            title={`${tm.viewCall} ${i + 1}`}
+                            className="text-slate-400 transition-colors hover:text-brand-600"
+                          >
+                            <ExternalLink size={12} />
+                          </Link>
+                        ))}
+                      </span>
+                    )}
+                  </span>
                 </div>
                 <div className="h-2 overflow-hidden rounded-full bg-slate-100">
                   <div
