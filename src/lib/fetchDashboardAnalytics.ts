@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import type { OwnerAnalytics, MarketerAnalytics, OperatorKpi, CriticalCall } from "./analytics-types";
 import { normalizeTopProducts } from "./normalizeTopProducts";
+import { normalizeDemandTags } from "./normalizeDemandTags";
 
 function toArr(v: unknown): string[] {
   if (Array.isArray(v)) return v.map(String);
@@ -212,11 +213,7 @@ export async function fetchMarketerAnalytics(userId: string, since: Date | null 
       if (key) intentFreq.set(key, (intentFreq.get(key) ?? 0) + 1);
     }
   }
-  const maxIntentCount = Math.max(...intentFreq.values(), 1);
-  const demandTags = [...intentFreq.entries()]
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 20)
-    .map(([tag, count]) => ({ tag, count, weight: Math.ceil((count / maxIntentCount) * 5) as 1 | 2 | 3 | 4 | 5 }));
+  const demandTags = await normalizeDemandTags(intentFreq);
 
   // ── Traffic sources grouped by call source ──────────────────────────────
   const sourceMap = new Map<string, { calls: number; sold: number; junk: number }>();
