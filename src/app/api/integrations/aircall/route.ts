@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateApiKeyFromString } from "@/lib/apiAuth";
+import { rejectIfSuspended } from "@/lib/accountSuspension";
 import { downloadAndQueueRecording, VALID_REPORT_TYPES } from "@/lib/integrationHelper";
 import { logApiRequest } from "@/lib/apiLog";
 
@@ -10,6 +11,9 @@ export async function POST(request: Request) {
 
   const auth = await validateApiKeyFromString(key);
   if (!auth) return NextResponse.json({ error: "Invalid or missing API key" }, { status: 401 });
+
+  const suspended = await rejectIfSuspended(auth.userId, "aircall");
+  if (suspended) return suspended;
   if (!VALID_REPORT_TYPES.includes(reportType as typeof VALID_REPORT_TYPES[number])) {
     logApiRequest(auth.userId, "aircall", "invalid_params", 400);
     return NextResponse.json({ error: "reportType must be one of: high_level, medium, detailed" }, { status: 400 });

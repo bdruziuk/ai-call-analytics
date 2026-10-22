@@ -4,6 +4,7 @@ import { authOptions } from "@/auth";
 import { db } from "@/lib/db";
 import { PLAN_ORDER } from "@/lib/plans";
 import { isValidBusinessType } from "@/lib/businessTypes";
+import { enqueueCall } from "@/services/call.service";
 
 function isAdminEmail(email: string | null | undefined): boolean {
   if (!email) return false;
@@ -36,6 +37,35 @@ export async function PATCH(
       return NextResponse.json(user);
     } catch (err) {
       console.error("[admin/user/PATCH isTestAccount]", err);
+      return NextResponse.json({ error: "DB_ERROR", detail: String(err) }, { status: 500 });
+    }
+  }
+
+  // ── suspended ───────────────────────────────────────────────────────────
+  // Suspending blocks new calls (API, webhooks, upload) and stops processing
+  // of queued ones. Resuming re-enqueues the calls parked while suspended.
+  if (typeof body.suspended === "boolean") {
+    try {
+      const user = await db.user.update({
+        where: { id },
+        data: { suspendedAt: body.suspended ? new Date() : null },
+        select: { id: true, suspendedAt: true },
+      });
+
+      let requeued = 0;
+      if (!body.suspended) {
+        const queued = await db.call.findMany({
+          where:   { userId: id, status: "queued" },
+          select:  { id: true },
+          orderBy: { createdAt: "asc" },
+        });
+        for (const call of queued) enqueueCall(call.id, "resume");
+        requeued = queued.length;
+      }
+
+      return NextResponse.json({ ...user, requeued });
+    } catch (err) {
+      console.error("[admin/user/PATCH suspended]", err);
       return NextResponse.json({ error: "DB_ERROR", detail: String(err) }, { status: 500 });
     }
   }

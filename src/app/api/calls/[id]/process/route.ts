@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { db } from "@/lib/db";
 import { enqueueCall } from "@/services/call.service";
+import { rejectIfSuspended } from "@/lib/accountSuspension";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -23,6 +24,9 @@ export async function POST(_: Request, { params }: Props) {
     if (!existing) return NextResponse.json({ error: "Call not found" }, { status: 404 });
     if (existing.userId !== session.user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     if (existing.status === "completed") return NextResponse.json({ error: "Already completed" }, { status: 409 });
+
+    const suspended = await rejectIfSuspended(session.user.id);
+    if (suspended) return suspended;
 
     // Already in-flight — no need to re-enqueue.
     if (existing.status === "transcribing" || existing.status === "analyzing") {

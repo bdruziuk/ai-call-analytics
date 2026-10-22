@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/auth';
 import { db } from '@/lib/db';
 import { checkUploadAllowed, getOrCreateSubscription } from '@/lib/planLimits';
+import { rejectIfSuspended } from '@/lib/accountSuspension';
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +13,9 @@ export async function POST(request: Request) {
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const suspended = await rejectIfSuspended(session.user.id);
+    if (suspended) return suspended;
 
     // ── Plan limit check ──────────────────────────────────────────────────
     const limitCheck = await checkUploadAllowed(session.user.id);

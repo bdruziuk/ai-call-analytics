@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { validateApiKeyFromString } from "@/lib/apiAuth";
+import { rejectIfSuspended } from "@/lib/accountSuspension";
 import { downloadAndQueueRecording, VALID_REPORT_TYPES } from "@/lib/integrationHelper";
 import { logApiRequest } from "@/lib/apiLog";
 import { db } from "@/lib/db";
@@ -28,6 +29,9 @@ export async function POST(request: Request) {
 
   const auth = await validateApiKeyFromString(key);
   if (!auth) return NextResponse.json({ error: "Invalid or missing API key" }, { status: 401 });
+
+  const suspended = await rejectIfSuspended(auth.userId, "binotel");
+  if (suspended) return suspended;
 
   const userCreds = await db.user.findUnique({
     where: { id: auth.userId },

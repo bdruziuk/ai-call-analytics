@@ -3,6 +3,7 @@ import path from "path";
 import { db } from "@/lib/db";
 import { enqueueCall } from "@/services/call.service";
 import { checkUploadAllowed } from "@/lib/planLimits";
+import { isUserSuspended, ACCOUNT_SUSPENDED_ERROR } from "@/lib/accountSuspension";
 
 export const VALID_REPORT_TYPES = ["high_level", "medium", "detailed"] as const;
 
@@ -32,6 +33,10 @@ export async function downloadAndQueueRecording(opts: {
   | { skipped: true; reason: string }
 > {
   const { recordingUrl, reportType, userId, prefix, internalNumber, salesProfileId, externalId } = opts;
+
+  if (await isUserSuspended(userId)) {
+    return { skipped: true, reason: ACCOUNT_SUSPENDED_ERROR };
+  }
 
   // ── Plan limit check ────────────────────────────────────────────────────
   const limitCheck = await checkUploadAllowed(userId);

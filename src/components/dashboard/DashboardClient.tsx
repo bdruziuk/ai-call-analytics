@@ -374,7 +374,9 @@ export function DashboardClient({ t, lang, profiles, initialManagerFilter = "", 
         if (!res.ok) {
           const msg = data.error === "minute_limit_exceeded"
             ? t.errors.minuteLimitExceeded
-            : data.error || t.dashboard.uploadSection.somethingWentWrong;
+            : data.error === "account_suspended"
+              ? t.errors.accountSuspended
+              : data.error || t.dashboard.uploadSection.somethingWentWrong;
           throw new Error(msg);
         }
         if (data.id) startProcessing(data.id);

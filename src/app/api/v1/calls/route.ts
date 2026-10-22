@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { validateApiKey } from "@/lib/apiAuth";
+import { rejectIfSuspended } from "@/lib/accountSuspension";
 import { db } from "@/lib/db";
 import { enqueueCall } from "@/services/call.service";
 import { checkUploadAllowed } from "@/lib/planLimits";
@@ -49,6 +50,9 @@ export async function POST(request: Request) {
   const auth = await validateApiKey(request);
   if (!auth)
     return NextResponse.json({ error: "Invalid or missing API key" }, { status: 401 });
+
+  const suspended = await rejectIfSuspended(auth.userId, "v1");
+  if (suspended) return suspended;
 
   // ── Plan limit check ──────────────────────────────────────────────────
   const limitCheck = await checkUploadAllowed(auth.userId);
