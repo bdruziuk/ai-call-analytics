@@ -85,6 +85,7 @@ export default async function AdminPage({ params }: Props) {
     businessType: (u as unknown as { businessType?: string }).businessType ?? "other",
     createdAt: u.createdAt.toISOString(),
     updatedAt: u.updatedAt.toISOString(),
+    suspendedAt: u.suspendedAt?.toISOString() ?? null,
     calls: [],
     salesProfiles: u.salesProfiles.map((p: typeof u.salesProfiles[number]) => ({
       ...p,

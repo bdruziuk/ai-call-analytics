@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 
-export type ApiLogStatus = "success" | "skipped" | "error" | "auth_failed" | "no_recording" | "invalid_params" | "cancelled" | "duplicate" | "uploading";
+export type ApiLogStatus = "success" | "skipped" | "error" | "auth_failed" | "no_recording" | "invalid_params" | "cancelled" | "duplicate" | "uploading" | "suspended";
 
 export function logApiRequest(
   userId: string,

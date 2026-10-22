@@ -15,6 +15,10 @@ model User {
   googleId      String?        @unique
   isTestAccount Boolean        @default(false)
 
+  // Admin suspension: when set, new calls are rejected and queued calls are
+  // not sent to OpenAI until an admin lifts the suspension.
+  suspendedAt   DateTime?
+
   // Data-processing consent (required at registration)
   analyticsConsentAccepted   Boolean   @default(false)
   analyticsConsentAcceptedAt DateTime?

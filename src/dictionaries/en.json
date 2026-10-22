@@ -422,7 +422,8 @@
   },
   "errors": {
     "unsupportedLanguage": "\"{language}\" cannot be analyzed",
-    "minuteLimitExceeded": "Monthly minute limit reached. Upgrade your plan to continue."
+    "minuteLimitExceeded": "Monthly minute limit reached. Upgrade your plan to continue.",
+    "accountSuspended": "Your account has been suspended by an administrator. Uploading and analysing calls is unavailable."
   },
   "settings": {
     "title": "Settings",
@@ -770,7 +771,11 @@
     "deleteProfile": "Delete manager",
     "deleteProfileConfirm": "Delete manager \"{name}\"? Calls will be kept but unlinked from this manager.",
     "planDistribution": "Accounts by plan",
-    "totalMinutes": "Minutes used"
+    "totalMinutes": "Minutes used",
+    "suspendAccount": "Suspend",
+    "suspendedBadge": "Suspended",
+    "suspendConfirm": "Suspend {name}? New calls will be rejected and queued calls will not be sent for analysis.",
+    "suspendedHint": "Account suspended. New calls are rejected and analysis is paused."
   },
   "dateLocale": "en-US",
   "analytics": {

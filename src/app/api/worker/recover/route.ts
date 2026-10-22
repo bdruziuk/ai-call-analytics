@@ -27,6 +27,7 @@ const MAX_RETRY_COUNT = 3;
  * 1. Resets calls stuck in transcribing/analyzing for > STUCK_THRESHOLD_MS back to "queued".
  * 2. Re-enqueues "queued" calls that haven't started yet (e.g. after a server restart).
  * 3. Skips calls that have already exceeded MAX_RETRY_COUNT.
+ * 4. Skips calls of suspended accounts (they stay "queued" until resumed).
  *
  * Safe to call repeatedly (idempotent). Intended to be triggered by a cron job
  * (Railway Cron Service → POST /api/worker/recover every 10–15 minutes)
@@ -77,7 +78,12 @@ export async function POST(request: Request) {
   // 3. Pick up queued calls that aren't yet being processed
   // (e.g. after a server restart where fire-and-forget tasks were lost)
   const pendingCalls = await db.call.findMany({
-    where:   { status: "queued", retryCount: { lt: MAX_RETRY_COUNT } },
+    where:   {
+      status:     "queued",
+      retryCount: { lt: MAX_RETRY_COUNT },
+      // Suspended accounts keep their queued calls parked until resumed.
+      OR: [{ userId: null }, { user: { suspendedAt: null } }],
+    },
     select:  { id: true, source: true },
     orderBy: { createdAt: "asc" },
     take:    50,

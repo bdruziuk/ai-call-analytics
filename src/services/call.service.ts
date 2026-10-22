@@ -9,6 +9,7 @@ import { processingLimiter } from "@/lib/concurrency";
 import { Prisma } from "@prisma/client";
 import type { AnalysisLanguage } from "@/lib/analysis/prompts";
 import { isValidBusinessType } from "@/lib/businessTypes";
+import { isUserSuspended } from "@/lib/accountSuspension";
 
 // Processing timeout: 15 minutes. Covers large files + slow OpenAI responses.
 const PROCESSING_TIMEOUT_MS = parseInt(
@@ -58,6 +59,10 @@ async function runProcessCall(callId: string): Promise<Awaited<ReturnType<typeof
   if (!call) throw new Error("Call not found");
   if (call.status === "completed") return call;
 
+  // Suspended account: don't send anything to OpenAI. The call stays "queued"
+  // with its audio on disk so it can be picked up once the suspension is lifted.
+  if (call.userId && (await isUserSuspended(call.userId))) return call;
+
   // Guard: audio file must exist on disk. If missing, mark failed immediately.
   try {
     await access(call.filePath);
@@ -69,6 +74,7 @@ async function runProcessCall(callId: string): Promise<Awaited<ReturnType<typeof
   }
 
   let durationSeconds = 0;
+  let keepAudioFile = false;
 
   try {
     await db.call.update({
@@ -95,6 +101,17 @@ async function runProcessCall(callId: string): Promise<Awaited<ReturnType<typeof
         "transcription",
       ),
     );
+
+    // The account may have been suspended while transcription was running —
+    // stop before the language-detection / analysis requests and put the call
+    // back in the queue (audio kept) so it is fully reprocessed after resume.
+    if (call.userId && (await isUserSuspended(call.userId))) {
+      keepAudioFile = true;
+      return db.call.update({
+        where: { id: callId },
+        data: { status: "queued", processingStartedAt: null },
+      });
+    }
 
     const langResult = await detectCallLanguage(rawTranscription.text);
 
@@ -175,10 +192,12 @@ async function runProcessCall(callId: string): Promise<Awaited<ReturnType<typeof
     });
     throw error;
   } finally {
-    try {
-      await unlink(call.filePath);
-    } catch (unlinkErr) {
-      console.warn("[processCall] could not delete audio file:", unlinkErr);
+    if (!keepAudioFile) {
+      try {
+        await unlink(call.filePath);
+      } catch (unlinkErr) {
+        console.warn("[processCall] could not delete audio file:", unlinkErr);
+      }
     }
   }
 }

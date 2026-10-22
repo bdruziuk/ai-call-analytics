@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   ChevronDown, ChevronRight, RefreshCw, Shield,
   Users, PhoneCall, CheckCircle2, XCircle, Loader2,
-  Clock, User, Search, Wifi, Trash2, UserPlus, X, Key, Activity, Radio, Briefcase,
+  Clock, User, Search, Wifi, Trash2, UserPlus, X, Key, Activity, Radio, Briefcase, Ban,
 } from "lucide-react";
 import { BUSINESS_TYPES, BUSINESS_TYPE_LABELS, isValidBusinessType, type BusinessType } from "@/lib/businessTypes";
 import type ukDict from "@/dictionaries/uk.json";
@@ -64,6 +64,7 @@ type UserRecord = {
   image: string | null;
   googleId: string | null;
   isTestAccount: boolean;
+  suspendedAt: string | null;
   planId: string;
   minutesUsed: number;
   createdAt: string;
@@ -564,6 +565,8 @@ function UserRow({
     isValidBusinessType(user.businessType) ? user.businessType : "other"
   );
   const [saving, setSaving]                 = useState(false);
+  const [isSuspended, setIsSuspended]       = useState(!!user.suspendedAt);
+  const [savingSuspend, setSavingSuspend]   = useState(false);
   const [savingPlan, setSavingPlan]         = useState(false);
   const [savingBizType, setSavingBizType]   = useState(false);
   const [deleting, setDeleting]         = useState(false);
@@ -618,6 +621,25 @@ function UserRow({
       setIsTest(!next);    // rollback
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleSuspendToggle() {
+    const next = !isSuspended;
+    if (next && !confirm(t.admin.suspendConfirm.replace("{name}", user.name || user.email))) return;
+    setIsSuspended(next);  // optimistic
+    setSavingSuspend(true);
+    try {
+      const res = await fetch(`/api/admin/user/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ suspended: next }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setIsSuspended(!next);  // rollback
+    } finally {
+      setSavingSuspend(false);
     }
   }
 
@@ -686,8 +708,8 @@ function UserRow({
     }
   }
 
-  const rowBg = isTest ? "bg-amber-50/40" : "bg-white";
-  const borderColor = isTest ? "border-amber-200" : "border-slate-200";
+  const rowBg = isSuspended ? "bg-red-50/40" : isTest ? "bg-amber-50/40" : "bg-white";
+  const borderColor = isSuspended ? "border-red-200" : isTest ? "border-amber-200" : "border-slate-200";
 
   return (
     <div className={`overflow-hidden rounded-xl border shadow-sm transition-colors ${rowBg} ${borderColor}`}>
@@ -721,6 +743,14 @@ function UserRow({
               {user.googleId && (
                 <span className="ml-2 rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-500 uppercase tracking-wide">
                   Google
+                </span>
+              )}
+              {isSuspended && (
+                <span
+                  className="ml-2 rounded-full bg-red-100 px-1.5 py-0.5 text-[9px] font-bold text-red-700 uppercase tracking-wide"
+                  title={t.admin.suspendedHint}
+                >
+                  {t.admin.suspendedBadge}
                 </span>
               )}
               {isTest && (
@@ -814,6 +844,21 @@ function UserRow({
             : <ChevronDown size={10} className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-slate-400" />
           }
         </div>
+
+        {/* ── Suspend / resume account ── */}
+        <button
+          onClick={handleSuspendToggle}
+          disabled={savingSuspend}
+          title={isSuspended ? t.admin.suspendedHint : t.admin.suspendAccount}
+          className={`flex flex-shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+            isSuspended
+              ? "border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
+              : "border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+          }`}
+        >
+          {savingSuspend ? <Loader2 size={12} className="animate-spin" /> : <Ban size={12} />}
+          {isSuspended ? t.admin.suspendedBadge : t.admin.suspendAccount}
+        </button>
 
         {/* ── Delete account ── */}
         <button
@@ -1081,6 +1126,7 @@ function CreateAccountModal({
         image:         null,
         googleId:      null,
         isTestAccount: data.isTestAccount,
+        suspendedAt:   null,
         planId:        data.planId ?? planId,
         minutesUsed:   0,
         createdAt:     data.createdAt,
